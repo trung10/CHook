@@ -2,10 +2,12 @@ package com.facepro.camerahook;
 
 
 
+
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Handler;
@@ -24,17 +26,26 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VideoDecoder {
-
-    private static final String TAG = "zqf-dev";
-    private Surface mSurface;
+    private static final String TAG = "VideoDecoder";
+    private final Surface mSurface;
     private MediaCodec mMediaCodec;
     private Handler mDecodeHandler;
     private boolean mIsRunning = true;
-
     private byte[] mYuvData = null;
+    private byte[] mYuvData1 = null;
+    private int[] mColorsBuffer;
+    private Callback mCallback;
 
-    public VideoDecoder(int width, int height) {
-        //初始化解码器
+    public VideoDecoder(Surface surface,Callback callback) {
+        this.mSurface = surface;
+        mCallback = callback;
+    }
+
+    public void start(int width, int height)
+    {
+        this.mYuvData = new byte[width * height * 3 / 2];
+        mYuvData1 = new byte[width * height * 3 / 2];
+        mColorsBuffer = new int[width * height];
         //启动socket线程
         Thread decodeThread = new Thread() {
             @Override
@@ -51,23 +62,41 @@ public class VideoDecoder {
                         }
                     }
                 };
-                //初始化解码器
-                if (initMediaCodec(width, height)) {
-                    //启动socket线程
-                    startSocketThread();
+                try {
+                    //初始化解码器
+                    if (initMediaCodec(width, height)) {
+                        //启动socket线程
+                        Thread socketThread = new Thread() {
+                            @Override
+                            public void run() {
+                                receiveData();
+                            }
+                        };
+                        socketThread.start();
+                    }
+                    Looper.loop();
                 }
-                Looper.loop();
+                finally {
+                    releaseMediaCodec();
+                }
+
             }
         };
         decodeThread.start();
+        mIsRunning = true;
     }
 
-    public void setSurface(Surface surface){
-        mSurface = surface;
-    }
-
-    public void release(){
+    public void stop()
+    {
         mIsRunning = false;
+    }
+
+    private void releaseMediaCodec(){
+        if(mMediaCodec != null){
+            mMediaCodec.stop();
+            mMediaCodec.release();
+            mMediaCodec = null;
+        }
     }
 
     private boolean initMediaCodec(int width, int height) {
@@ -78,7 +107,6 @@ public class VideoDecoder {
             mMediaCodec.start();
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
             //创建解码失败
             Log.e(TAG, "创建解码失败");
         }
@@ -103,17 +131,14 @@ public class VideoDecoder {
         int outIndex = mMediaCodec.dequeueOutputBuffer(info, 10000);
         if (outIndex >= 0) {
             ByteBuffer outBuffer = mMediaCodec.getOutputBuffer(outIndex);
-            if(mYuvData==null){
-                mYuvData = new byte[outBuffer.remaining()];
-            }
             outBuffer.get(mYuvData, 0, outBuffer.remaining());
+            mCallback.onFrame(mYuvData);
             if(mSurface!=null){
                 int width = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_WIDTH);
                 int height = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_HEIGHT);
-                byte[] yuvData = RotateNV21(mYuvData,width,height);
-                int new_width = height;
-                int new_height = width;
-                Bitmap image = yuvToBitmap(yuvData,new_width,new_height);
+                byte[] yuvData = rotateNV21(mYuvData,mYuvData1,width,height);
+
+                Bitmap image = yuvToBitmap(yuvData,mColorsBuffer,height,width);
                 Canvas canvas = mSurface.lockCanvas(null);
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 canvas.drawBitmap(image, null,  new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), paint);
@@ -123,8 +148,12 @@ public class VideoDecoder {
         }
     }
 
-    public static byte[] RotateNV21(byte[] nv21, int width, int height) {
-        byte[] rotatedNV21 = new byte[nv21.length];
+    public interface Callback {
+        void onFrame(byte[] data);
+    }
+
+    private static byte[] rotateNV21(byte[] nv21,byte[] mYuvData1, int width, int height) {
+        byte[] rotatedNV21 = mYuvData1;//new byte[nv21.length];
         int frameSize = width * height;
         // Rotate Y component by 270 degrees
         int rotatedIndex = 0;
@@ -150,8 +179,8 @@ public class VideoDecoder {
     }
 
 
-    public static Bitmap yuvToBitmap(byte[] data, int width, int height) {
-        int[] colors = new int[width * height];
+    private static Bitmap yuvToBitmap(byte[] data,int[] c, int width, int height) {
+        int[] colors = c;
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
@@ -180,16 +209,6 @@ public class VideoDecoder {
         return bitmap;
     }
 
-    private void startSocketThread(){
-        Thread socketThread = new Thread() {
-            @Override
-            public void run() {
-                super.run();
-                receiveData();
-            }
-        };
-        socketThread.start();
-    }
     private Socket socket;
     private DataOutputStream out;
     private DataInputStream in;
@@ -222,7 +241,7 @@ public class VideoDecoder {
                         byte[] data1 = new byte[len];
                         data1 = Arrays.copyOf(data, len);
                         //decode(data1);
-                        prehandle(outputStream, data1);
+                        preHandle(outputStream, data1);
                     }
                 }
 
@@ -235,6 +254,7 @@ public class VideoDecoder {
                     in.close();
                     out.close();
                     socket.close();
+                    mDecodeHandler.getLooper().quit();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -245,7 +265,7 @@ public class VideoDecoder {
 
     }
 
-    private void prehandle(ByteArrayOutputStream outputStream, byte[] receivedData) throws IOException {
+    private void preHandle(ByteArrayOutputStream outputStream, byte[] receivedData) throws IOException {
         if(outputStream.size()+receivedData.length<4){
             //缓冲区的数据加已经接收的数据小于4，继续读取数据
             outputStream.write(receivedData);
@@ -276,3 +296,5 @@ public class VideoDecoder {
         return -1;
     }
 }
+
+

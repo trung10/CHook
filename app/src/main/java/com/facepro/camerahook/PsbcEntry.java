@@ -17,14 +17,9 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class PsbcEntry {
     private static final String TAG = "CameraHook";
-    private static Camera.PreviewCallback mPreviewCallback;
-    private static Camera.PreviewCallback mPreviewCallbackWithBuffer;
-    private static VideoDecoder mVideoDecoder = null;
 
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpParam) throws Throwable {
         if(lpParam.packageName.equals("com.yitong.mbank.psbc")){
-
-
             XposedHelpers.findAndHookConstructor(Application.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) {
@@ -38,44 +33,19 @@ public class PsbcEntry {
 
                     if(className.equals("com.yitong.mbank.psbc.YouBankApplication")
                             && processName.equals("com.yitong.mbank.psbc")) {
-
-                        performLoadPackage(lpParam);
-
-//                        XposedBridge.hookAllConstructors(PathClassLoader.class, new XC_MethodHook() {
-//                            @Override
-//                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                                Object[] args = param.args;
-//                                for(Object arg : args)
-//                                {
-//                                    //Log.d(TAG, "PathClassLoader arg: " + arg);
-//                                }
-//                            }
-//                        });
-//                        XposedBridge.hookAllConstructors(DexClassLoader.class, new XC_MethodHook() {
-//                            @Override
-//                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                                Object[] args = param.args;
-//                                for(Object arg : args)
-//                                {
-//                                    //Log.d(TAG, "DexClassLoader arg: " + arg);
-//                                }
-//                            }
-//                        });
+                        //HOOK主程序
+                        hookMain(lpParam);
                     }
                 }
             });
         }
     }
 
-
-    private void performLoadPackage1(XC_LoadPackage.LoadPackageParam lpParam)
+    private HookCamera hookCamera = null;
+    private void hookMain(XC_LoadPackage.LoadPackageParam lpParam)
     {
-
-    }
-
-
-    private void performLoadPackage(XC_LoadPackage.LoadPackageParam lpParam)
-    {
+        hookCamera = new HookCamera();
+        hookCamera.hook1(lpParam);
         //hookCamera(lpParam);
         XposedHelpers.findAndHookMethod(android.app.Activity.class, "onResume", new XC_MethodHook() {
             @Override
@@ -115,70 +85,34 @@ public class PsbcEntry {
                     HookHelper.waitFindChildView(decorView, "的登录密码",true, new HookHelper.WaitCallback() {
                         @Override
                         public void callback(Object obj) {
-                            Log.d(TAG, "找到了: " + obj);
+                            //Log.d(TAG, "找到了: " + obj);
                             ViewTree viewTree = HookHelper.getViewTree(decorView);
-
+                            //Log.d(TAG, "viewTree: " + viewTree);
                             EditText editText = (EditText)viewTree.getView(49);
-                            editText.setText("123456");
-                            HookHelper.getSuperClass(editText.getClass());
-                            //view.performClick();
+                            editText.setText("w3312422");
+                            //HookHelper.getSuperClass(editText.getClass());
+                            Button button = (Button)viewTree.getView(58);
+                            button.performClick();
                         }
                     });
                 }
-            }
-        });
-    }
-
-    private void hookCamera(XC_LoadPackage.LoadPackageParam lpparam)
-    {
-        XposedHelpers.findAndHookMethod(Camera.class, "startPreview", new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                Log.d(TAG, "startPreview");
-                Camera camera = (Camera)param.thisObject;
-                Camera.Size size = camera.getParameters().getPreviewSize();
-                Log.d(TAG, "startPreview: " + size.width + "x" + size.height);
-            }
-        });
-
-        XposedHelpers.findAndHookMethod(Camera.class, "setPreviewSurface", Surface.class, new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                Log.d(TAG, "setPreviewSurface");
-                for(Object args : param.args){
-                    Log.d(TAG, "setPreviewSurface: " + args);
+                else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.app.view.activity.FaceCheckAuthActivity")){
+                    Activity activity = (Activity)param.thisObject;
+                    final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
+                    //Log.d(TAG, "viewTree: " + viewTree);
+                    CheckBox checkBox = (CheckBox)viewTree.getView(47);
+                    checkBox.setChecked(true);
                 }
             }
         });
-
-//        XposedHelpers.findAndHookMethod(Camera.class, "setPreviewTexture",SurfaceTexture.class, new XC_MethodHook() {
+//        XposedHelpers.findAndHookMethod("com.psbc.ump.product.baseapp.widget.edittext", lpParam.classLoader, "getInputText", new XC_MethodHook() {
 //            @Override
 //            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-//                Log.d(TAG, "setPreviewTexture");`
+//                Log.d(TAG, "getInputText: " + param.thisObject);
+//                param.setResult("w3312422");
 //            }
 //        });
-
-        XposedHelpers.findAndHookMethod(Camera.class, "setPreviewCallback", Camera.PreviewCallback.class, new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                Log.d(TAG, "setPreviewCallback");
-                for(Object args : param.args){
-                    Log.d(TAG, "setPreviewCallback: " + args);
-                }
-                mPreviewCallback = (Camera.PreviewCallback)param.args[0];
-            }
-        });
-
-        XposedHelpers.findAndHookMethod(Camera.class, "setPreviewCallbackWithBuffer",Camera.PreviewCallback.class, new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                Log.d(TAG, "setPreviewCallbackWithBuffer");
-                for(Object args : param.args){
-                    Log.d(TAG, "setPreviewCallbackWithBuffer: " + args);
-                }
-                mPreviewCallbackWithBuffer = (Camera.PreviewCallback)param.args[0];
-                //param.args[0] = null;
-            }
-        });
     }
+
 }
