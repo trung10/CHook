@@ -7,10 +7,9 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.GridView;
-import android.widget.TextView;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -102,15 +101,29 @@ public class PsbcEntry {
                 else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.login.view.activity.LoginPswActivity"))
                 {
                     Activity activity = (Activity)param.thisObject;
-                    ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+                    final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
                     ViewTree viewTree = HookHelper.getViewTree(decorView);
-                    Log.d(TAG, "viewTree: " + viewTree);
+                    //Log.d(TAG, "viewTree: " + viewTree);
                     EditText editText = (EditText)viewTree.getView(35);
                     editText.setText("18694042031");
                     CheckBox checkBox = (CheckBox)viewTree.getView(39);
                     checkBox.setChecked(true);
-                    //HookHelper.getSuperClass(textView.getClass());
+                    Button button = (Button)viewTree.getView(44);
+                    button.performClick();
                     //Log.d(TAG, "textView: " + textView.getText());
+
+                    HookHelper.waitFindChildView(decorView, "的登录密码",true, new HookHelper.WaitCallback() {
+                        @Override
+                        public void callback(Object obj) {
+                            Log.d(TAG, "找到了: " + obj);
+                            ViewTree viewTree = HookHelper.getViewTree(decorView);
+
+                            EditText editText = (EditText)viewTree.getView(49);
+                            editText.setText("123456");
+                            HookHelper.getSuperClass(editText.getClass());
+                            //view.performClick();
+                        }
+                    });
                 }
             }
         });
