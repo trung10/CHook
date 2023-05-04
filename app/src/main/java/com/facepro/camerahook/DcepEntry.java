@@ -63,7 +63,7 @@ public class DcepEntry {
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 Log.d(TAG, "onResume: " + param.thisObject);
                 Activity activity = (Activity)param.thisObject;
-                HookHelper.checkView(activity,false);
+
 
             }
         });

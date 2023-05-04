@@ -7,7 +7,10 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.TextView;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -79,11 +82,36 @@ public class PsbcEntry {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 Log.d(TAG, "onResume: " + param.thisObject);
-                Activity activity = (Activity)param.thisObject;
-                //遍历activity的子view
-                HookHelper.checkView(activity, false);
-                //HookHelper.clickView(activity);
-
+                if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.home.view.activity.MainActivity"))
+                {
+                    Activity activity = (Activity)param.thisObject;
+                    ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
+                    ViewGroup view = (ViewGroup)viewTree.getView(45);
+                    HookHelper.waitGetChildView(view, 0, new HookHelper.WaitCallback() {
+                        @Override
+                        public void callback(Object obj) {
+                            //Log.d(TAG, "callback: " + obj);
+                            ViewGroup view = (ViewGroup)obj;
+                            ViewTree viewTree = HookHelper.getViewTree(view);
+                            //Log.d(TAG, "viewTree: " + viewTree);
+                            view.performClick();
+                        }
+                    });
+                }
+                else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.login.view.activity.LoginPswActivity"))
+                {
+                    Activity activity = (Activity)param.thisObject;
+                    ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
+                    Log.d(TAG, "viewTree: " + viewTree);
+                    EditText editText = (EditText)viewTree.getView(35);
+                    editText.setText("18694042031");
+                    CheckBox checkBox = (CheckBox)viewTree.getView(39);
+                    checkBox.setChecked(true);
+                    //HookHelper.getSuperClass(textView.getClass());
+                    //Log.d(TAG, "textView: " + textView.getText());
+                }
             }
         });
     }
