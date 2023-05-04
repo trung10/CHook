@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    signingConfigs {
+        soda {
+            storeFile file('C:\\Users\\ykzha\\AndroidStudioProjects\\CameraHook\\soda.jks')
+            storePassword 'z9019883'
+            keyAlias 'soda'
+            keyPassword 'z9019883'
+        }
+    }
+    namespace 'com.facepro.camerahook'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "com.facepro.camerahook"
+        minSdk 29
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.soda
+        }
+        debug {
+            signingConfig signingConfigs.soda
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+task installModule {
+    dependsOn 'assembleDebug'
+    doLast {
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "force-stop", "com.yitong.mbank.psbc"
+        }
+//        exec {
+//            workingDir '.'
+//            commandLine "adb", "shell", "am", "force-stop", "cn.gov.pbc.dcep"
+//        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "install", "build/outputs/apk/debug/app-debug.apk"
+        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "start", "com.yitong.mbank.psbc/com.yitong.mbank.psbc.module.home.view.activity.MainActivity"
+        }
+//        exec {
+//            workingDir '.'
+//            commandLine "adb", "shell", "am", "start", "cn.gov.pbc.dcep/cn.gov.pbc.dcep.DcepLauncherActivity"
+//        }
+    }
+}
+
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    compileOnly 'de.robv.android.xposed:api:82'
+}
