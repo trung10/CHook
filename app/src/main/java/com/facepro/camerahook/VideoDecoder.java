@@ -5,10 +5,12 @@ package com.facepro.camerahook;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -156,12 +158,11 @@ public class VideoDecoder {
             int width = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_WIDTH);
             int height = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_HEIGHT);
 
-            //解码出来的为YV12格式，需要转换为NV21格式
-            YV12toNV21(mYuvData,mYuvNv21Data,width,height);
+            i420ToNV21(mYuvData,mYuvNv21Data,width,height);
             if(mSurface!=null){
-                //旋转90度
-                rotateNV21(mYuvNv21Data, mRotatedNV21,width,height);
-                Bitmap image = yuvToBitmap(mRotatedNV21,mColorsBuffer,height,width);
+                //旋转270度
+                Bitmap image = yuvToBitmap(mYuvData,mColorsBuffer,width,height);
+                image = rotateAndFlipBitmap(image,-90);
                 try {
                     Canvas canvas = mSurface.lockCanvas(null);
                     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -172,7 +173,9 @@ public class VideoDecoder {
                     Log.e(TAG, "draw error",e);
                 }
             }
-            mCallback.onFrame(mYuvNv21Data,mCamera);
+            if(mCallback!=null){
+                mCallback.onFrame(mYuvNv21Data,mCamera);
+            }
             mMediaCodec.releaseOutputBuffer(outIndex, false);
         }
     }
@@ -181,49 +184,56 @@ public class VideoDecoder {
         void onFrame(byte[] data, Camera camera);
     }
 
-    private static void YV12toNV21(final byte[] input,final byte[] output,final int width, final int height) {
+    /** Convert I420 (YYYYYYYY:UU:VV) to NV21 (YYYYYYYYY:VUVU) */
+    public static void i420ToNV21(byte[] i420Data, byte[] nv21Data, int width, int height) {
+        int ySize = width * height;
+        int uSize = ySize / 4;
+
+        // 将Y分量复制到目标数组中
+        System.arraycopy(i420Data, 0, nv21Data, 0, ySize);
+
+        for (int i = 0; i < uSize; i++) {
+            int uIndex = ySize + i;
+            int vIndex = ySize + uSize + i;
+
+            // 将U和V分量交替写入目标数组
+            nv21Data[ySize + i * 2] = i420Data[uIndex];
+            nv21Data[ySize + i * 2 + 1] = i420Data[vIndex];
+        }
+
+        // 对V分量进行交错格式化
+//        for (int i = 0; i < uSize / 2; i++) {
+//            int vIndex = ySize + uSize + i * 2;
+//            byte temp = nv21Data[vIndex];
+//            nv21Data[vIndex] = nv21Data[vIndex + 1];
+//            nv21Data[vIndex + 1] = temp;
+//        }
+    }
+
+    public static byte[] YV12toNV21(final byte[] input,final int width, final int height) {
 
         final int size = width * height;
         final int quarter = size / 4;
         final int vPosition = size; // This is where V starts
         final int uPosition = size + quarter; // This is where U starts
 
+        byte[] output = new byte[input.length]; // Create a new array with same size
         System.arraycopy(input, 0, output, 0, size); // Y is same
 
         for (int i = 0; i < quarter; i++) {
             output[size + i*2 ] = input[vPosition + i]; // For NV21, V first
             output[size + i*2 + 1] = input[uPosition + i]; // For Nv21, U second
         }
+        return output;
     }
 
-    private static void rotateNV21(byte[] nv21,byte[] rotatedNV21, int width, int height) {
-
-        int frameSize = width * height;
-        // Rotate Y component by 270 degrees
-        int rotatedIndex = 0;
-        for (int x = width - 1; x >= 0; x--)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                rotatedNV21[rotatedIndex++] = nv21[y * width + x];
-            }
-        }
-        // Rotate UV components by 270 degrees
-        int uvOffset = frameSize;
-        rotatedIndex = uvOffset;
-        for (int x = width - 2; x >= 0; x -= 2)
-        {
-            for (int y = 0; y < height / 2; y++)
-            {
-                rotatedNV21[rotatedIndex++] = nv21[uvOffset + y * width + x];
-                rotatedNV21[rotatedIndex++] = nv21[uvOffset + y * width + x + 1];
-            }
-        }
+    private static Bitmap rotateAndFlipBitmap(Bitmap source,int degree) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degree);
+        matrix.preScale(1, -1);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
-
-
-    private static Bitmap yuvToBitmap(byte[] data,int[] c, int width, int height) {
-        int[] colors = c;
+    private static Bitmap yuvToBitmap(byte[] data,int[] colors, int width, int height) {
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
