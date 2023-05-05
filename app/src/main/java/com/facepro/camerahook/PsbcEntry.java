@@ -35,17 +35,21 @@ public class PsbcEntry {
                             && processName.equals("com.yitong.mbank.psbc")) {
                         //HOOK主程序
                         hookMain(lpParam);
+                        //hookTest(lpParam);
                     }
                 }
             });
         }
     }
-
+    private void hookTest(XC_LoadPackage.LoadPackageParam lpParam){
+        Log.d(TAG, "dataDir: " + lpParam.appInfo.dataDir);
+    }
     private HookCamera hookCamera = null;
+    private boolean isFirst = true;
     private void hookMain(XC_LoadPackage.LoadPackageParam lpParam)
     {
-        hookCamera = new HookCamera();
-        hookCamera.hook1(lpParam);
+        hookCamera = new HookCamera(lpParam);
+        hookCamera.hook1();
         //hookCamera(lpParam);
         XposedHelpers.findAndHookMethod(android.app.Activity.class, "onResume", new XC_MethodHook() {
             @Override
@@ -53,6 +57,8 @@ public class PsbcEntry {
                 Log.d(TAG, "onResume: " + param.thisObject);
                 if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.home.view.activity.MainActivity"))
                 {
+                    if(!isFirst)return;
+                    isFirst=false;
                     Activity activity = (Activity)param.thisObject;
                     ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
                     ViewTree viewTree = HookHelper.getViewTree(decorView);
@@ -106,13 +112,5 @@ public class PsbcEntry {
                 }
             }
         });
-//        XposedHelpers.findAndHookMethod("com.psbc.ump.product.baseapp.widget.edittext", lpParam.classLoader, "getInputText", new XC_MethodHook() {
-//            @Override
-//            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-//                Log.d(TAG, "getInputText: " + param.thisObject);
-//                param.setResult("w3312422");
-//            }
-//        });
     }
-
 }

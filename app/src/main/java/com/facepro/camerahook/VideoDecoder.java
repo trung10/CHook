@@ -7,7 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Handler;
@@ -27,24 +27,39 @@ import java.util.Arrays;
 
 public class VideoDecoder {
     private static final String TAG = "VideoDecoder";
-    private final Surface mSurface;
+    private Surface mSurface;
     private MediaCodec mMediaCodec;
     private Handler mDecodeHandler;
     private boolean mIsRunning = true;
     private byte[] mYuvData = null;
-    private byte[] mYuvData1 = null;
+    private byte[] mYuvNv21Data = null;
+    private byte[] mRotatedNV21 = null;
     private int[] mColorsBuffer;
     private Callback mCallback;
+    private Camera mCamera;
 
-    public VideoDecoder(Surface surface,Callback callback) {
+    public VideoDecoder() {
+    }
+
+    public void setSurface(Surface surface){
         this.mSurface = surface;
-        mCallback = callback;
+    }
+
+    public void setCamera(Camera camera){
+        this.mCamera = camera;
+    }
+
+    public void setCallback(Callback callback){
+        this.mCallback = callback;
     }
 
     public void start(int width, int height)
     {
         this.mYuvData = new byte[width * height * 3 / 2];
-        mYuvData1 = new byte[width * height * 3 / 2];
+        if(this.mYuvNv21Data==null){
+            this.mYuvNv21Data = new byte[width * height * 3 / 2];
+        }
+        this.mRotatedNV21 = new byte[width * height * 3 / 2];
         mColorsBuffer = new int[width * height];
         //启动socket线程
         Thread decodeThread = new Thread() {
@@ -91,6 +106,11 @@ public class VideoDecoder {
         mIsRunning = false;
     }
 
+    public void addCallbackBuffer(byte[] buffer)
+    {
+        this.mYuvNv21Data = buffer;
+    }
+
     private void releaseMediaCodec(){
         if(mMediaCodec != null){
             mMediaCodec.stop();
@@ -132,28 +152,52 @@ public class VideoDecoder {
         if (outIndex >= 0) {
             ByteBuffer outBuffer = mMediaCodec.getOutputBuffer(outIndex);
             outBuffer.get(mYuvData, 0, outBuffer.remaining());
-            mCallback.onFrame(mYuvData);
-            if(mSurface!=null){
-                int width = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_WIDTH);
-                int height = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_HEIGHT);
-                byte[] yuvData = rotateNV21(mYuvData,mYuvData1,width,height);
 
-                Bitmap image = yuvToBitmap(yuvData,mColorsBuffer,height,width);
-                Canvas canvas = mSurface.lockCanvas(null);
-                Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                canvas.drawBitmap(image, null,  new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), paint);
-                mSurface.unlockCanvasAndPost(canvas);
+            int width = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_WIDTH);
+            int height = mMediaCodec.getInputFormat().getInteger(MediaFormat.KEY_HEIGHT);
+
+            //解码出来的为YV12格式，需要转换为NV21格式
+            YV12toNV21(mYuvData,mYuvNv21Data,width,height);
+            if(mSurface!=null){
+                //旋转90度
+                rotateNV21(mYuvNv21Data, mRotatedNV21,width,height);
+                Bitmap image = yuvToBitmap(mRotatedNV21,mColorsBuffer,height,width);
+                try {
+                    Canvas canvas = mSurface.lockCanvas(null);
+                    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    canvas.drawBitmap(image, null,  new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), paint);
+                    mSurface.unlockCanvasAndPost(canvas);
+                }
+                catch (Exception e){
+                    Log.e(TAG, "draw error",e);
+                }
             }
+            mCallback.onFrame(mYuvNv21Data,mCamera);
             mMediaCodec.releaseOutputBuffer(outIndex, false);
         }
     }
 
     public interface Callback {
-        void onFrame(byte[] data);
+        void onFrame(byte[] data, Camera camera);
     }
 
-    private static byte[] rotateNV21(byte[] nv21,byte[] mYuvData1, int width, int height) {
-        byte[] rotatedNV21 = mYuvData1;//new byte[nv21.length];
+    private static void YV12toNV21(final byte[] input,final byte[] output,final int width, final int height) {
+
+        final int size = width * height;
+        final int quarter = size / 4;
+        final int vPosition = size; // This is where V starts
+        final int uPosition = size + quarter; // This is where U starts
+
+        System.arraycopy(input, 0, output, 0, size); // Y is same
+
+        for (int i = 0; i < quarter; i++) {
+            output[size + i*2 ] = input[vPosition + i]; // For NV21, V first
+            output[size + i*2 + 1] = input[uPosition + i]; // For Nv21, U second
+        }
+    }
+
+    private static void rotateNV21(byte[] nv21,byte[] rotatedNV21, int width, int height) {
+
         int frameSize = width * height;
         // Rotate Y component by 270 degrees
         int rotatedIndex = 0;
@@ -175,7 +219,6 @@ public class VideoDecoder {
                 rotatedNV21[rotatedIndex++] = nv21[uvOffset + y * width + x + 1];
             }
         }
-        return rotatedNV21;
     }
 
 
@@ -296,5 +339,6 @@ public class VideoDecoder {
         return -1;
     }
 }
+
 
 
