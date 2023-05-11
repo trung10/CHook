@@ -5,6 +5,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.SessionConfiguration;
+import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.util.Log;
@@ -12,8 +13,13 @@ import android.view.Surface;
 
 import androidx.annotation.NonNull;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
+import ai.juyou.remotecamera.CameraPush;
+import ai.juyou.remotecamera.PushCallback;
+import ai.juyou.remotecamera.RemoteCamera;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -33,8 +39,23 @@ public class HookCamera2 {
     private ImageReader.OnImageAvailableListener mHookImageAvailableListener;
     private ImageReader.OnImageAvailableListener mOriginImageAvailableListener;
 
+    private RemoteCamera mRemoteCamera;
+    private CameraPush mCameraPush;
 
     public HookCamera2() {
+        mRemoteCamera = new RemoteCamera();
+        mRemoteCamera.setPushCallback(new PushCallback() {
+
+            @Override
+            public void onConnected(CameraPush cameraPush) {
+                mCameraPush = cameraPush;
+            }
+
+            @Override
+            public void onDisconnect() {
+                mCameraPush = null;
+            }
+        });
         mHookCameraDeviceStateCallback = new CameraDevice.StateCallback() {
             @Override
             public void onOpened(@NonNull CameraDevice camera) {
@@ -72,12 +93,14 @@ public class HookCamera2 {
         mHookImageAvailableListener = new ImageReader.OnImageAvailableListener() {
             @Override
             public void onImageAvailable(ImageReader reader) {
-                Log.d(TAG,"onImageAvailable :" + reader);
-
+                //Log.d(TAG,"onImageAvailable :" + reader);
                 mOriginImageAvailableListener.onImageAvailable(reader);
             }
         };
     }
+
+    List<String> list = new ArrayList<>();
+
     public void hook(XC_LoadPackage.LoadPackageParam lpParam) {
         XposedHelpers.findAndHookMethod(CameraManager.class,"openCamera", String.class, CameraDevice.StateCallback.class, Handler.class, new XC_MethodHook() {
             @Override
@@ -132,11 +155,41 @@ public class HookCamera2 {
                     Log.d(TAG, "setOnImageAvailableListener");
                     mOriginImageAvailableListener = (ImageReader.OnImageAvailableListener)param.args[0];
                     param.args[0] = mHookImageAvailableListener;
-                    Log.d(TAG, "setOnImageAvailableListener: " + mOriginImageAvailableListener);
+                    if(mOriginImageAvailableListener != null){
+                        mRemoteCamera.Open();
+                    }
+                    else{
+                        mRemoteCamera.Close();
+                    }
                 }
             });
 
-            //XposedBridge.hookAllMethods(android.media.ImageReader.class,)
+            XposedHelpers.findAndHookMethod(ImageReader.class,"acquireLatestImage", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Log.d(TAG, "acquireLatestImage");
+                    //HookHelper.printStackTrace();
+                }
+            });
+
+            XposedHelpers.findAndHookMethod(ImageReader.class,"acquireNextImage", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Log.d(TAG, "acquireNextImage");
+                    Image image = (Image)param.getResult();
+
+                    Log.d(TAG, "acquireNextImage: " + image.getWidth() + " " + image.getHeight() + " " + image.getFormat() + " " + image.getTimestamp() + " " + image.getPlanes().length);
+                    Image.Plane[] arr = image.getPlanes();
+                    ByteBuffer byteBuffer = arr[1].getBuffer();
+                    if(mCameraPush != null) {
+                        mCameraPush.push(image);
+                    }
+//                    byte[] bytes = new byte[byteBuffer.remaining()];
+//                    byteBuffer.clear();
+//                    byteBuffer.put(bytes);
+                }
+            });
+
         }
         catch (Exception e)
         {

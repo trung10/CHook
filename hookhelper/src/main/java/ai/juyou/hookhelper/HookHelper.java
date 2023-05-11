@@ -9,6 +9,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Timer;
 
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
+import de.robv.android.xposed.XposedHelpers;
+
 public class HookHelper {
     private static final String TAG = "CameraHook";
 
@@ -146,6 +150,25 @@ public class HookHelper {
             }
         }
     }
+
+    public static void printStackTrace()
+    {
+        try {
+            throw new Exception("printStackTrace");
+        }
+        catch (Exception e){
+            Log.e(TAG, "printStackTrace: ", e);
+        }
+    }
+
+    public static void hookAllMethods(Class cls, XC_MethodHook callback)
+    {
+        Method[] methods = cls.getDeclaredMethods();
+        for (Method method : methods) {
+            XposedBridge.hookMethod(method, callback);
+        }
+    }
+
 
     public static ViewTree getViewTree(Activity activity)
     {

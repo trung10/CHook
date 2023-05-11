@@ -28,30 +28,30 @@ public class WsEntry {
                 Activity activity = (Activity)param.thisObject;
                 ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
 
-                if(param.thisObject.getClass().getName().equals("com.whatsapp.HomeActivity")) {
-                    HookHelper.waitCall(1000,decorView, new WaitCallback() {
-                        @Override
-                        public void callback(Object obj) {
-                            ViewTree viewTree = HookHelper.getViewTree(decorView);
-                            View v = HookHelper.findChildView(decorView,"DD");
-                            v = (View)v.getParent().getParent().getParent().getParent();
-                            v.performClick();
-                        }
-                    });
-                }
-                else if(param.thisObject.getClass().getName().equals("com.whatsapp.Conversation")) {
-                    if(!isFirst)return;
-                    isFirst=false;
-                    HookHelper.waitCall(1000,decorView, new WaitCallback() {
-                        @Override
-                        public void callback(Object obj) {
-                            ViewTree viewTree = HookHelper.getViewTree(decorView);
-                            //Log.d(TAG, "callback: " + viewTree);
-                            View v = viewTree.getView(35);
-                            v.performClick();
-                        }
-                    });
-                }
+//                if(param.thisObject.getClass().getName().equals("com.whatsapp.HomeActivity")) {
+//                    HookHelper.waitCall(1000,decorView, new WaitCallback() {
+//                        @Override
+//                        public void callback(Object obj) {
+//                            ViewTree viewTree = HookHelper.getViewTree(decorView);
+//                            View v = HookHelper.findChildView(decorView,"DD");
+//                            v = (View)v.getParent().getParent().getParent().getParent();
+//                            v.performClick();
+//                        }
+//                    });
+//                }
+//                else if(param.thisObject.getClass().getName().equals("com.whatsapp.Conversation")) {
+//                    if(!isFirst)return;
+//                    isFirst=false;
+//                    HookHelper.waitCall(1000,decorView, new WaitCallback() {
+//                        @Override
+//                        public void callback(Object obj) {
+//                            ViewTree viewTree = HookHelper.getViewTree(decorView);
+//                            //Log.d(TAG, "callback: " + viewTree);
+//                            View v = viewTree.getView(35);
+//                            v.performClick();
+//                        }
+//                    });
+//                }
             }
         });
     }

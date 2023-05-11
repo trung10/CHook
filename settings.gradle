@@ -18,3 +18,4 @@ rootProject.name = "CameraHook"
 include ':app'
 include ':hookhelper'
 include ':jyface'
+include ':remotecamera'
