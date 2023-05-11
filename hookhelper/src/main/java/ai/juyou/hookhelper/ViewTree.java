@@ -1,4 +1,5 @@
-package com.facepro.camerahook;
+package ai.juyou.hookhelper;
+
 
 import android.util.Log;
 import android.view.View;

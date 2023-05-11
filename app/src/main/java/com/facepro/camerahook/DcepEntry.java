@@ -11,6 +11,8 @@ import android.widget.TextView;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 
+import ai.juyou.hookhelper.Utilities;
+import ai.juyou.hookhelper.ViewTree;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -56,22 +58,22 @@ public class DcepEntry {
                     isFirst = false;
                     try {
 
-                        View v = HookHelper.findChildView(decorView, "我的");
+                        View v = Utilities.findChildView(decorView, "我的");
                         //Log.d(TAG, "v: " + v);
                         ViewGroup item =(ViewGroup)v.getParent().getParent();
 
                         //Log.d(TAG, "item: " + item);
                         int itemId = item.getId();
                         //Log.d(TAG, "itemId: " + itemId);
-                        ViewTree viewTree = HookHelper.getViewTree(decorView);
+                        ViewTree viewTree = Utilities.getViewTree(decorView);
                         View nav = viewTree.getView(40);
                         XposedHelpers.callMethod(nav, "setSelectedItemId", itemId);
 
-                        HookHelper.waitFindChildView(decorView, "钱包总额", new HookHelper.WaitCallback() {
+                        Utilities.waitFindChildView(decorView, "钱包总额", new Utilities.WaitCallback() {
                             @Override
                             public void callback(Object obj) {
                                 TextView textView = (TextView) obj;
-                                ViewTree viewTree = HookHelper.getViewTree((ViewGroup)textView.getParent());
+                                ViewTree viewTree = Utilities.getViewTree((ViewGroup)textView.getParent());
                                 View w = viewTree.getView(5);
                                 w.performClick();
                             }
@@ -88,9 +90,9 @@ public class DcepEntry {
                 }
                 else if(param.thisObject.getClass().getName().equals("cn.gov.pbc.dcep.main.activity.WalletOverallActivity")){
                     try {
-                        ViewTree viewTree = HookHelper.getViewTree(decorView);
+                        ViewTree viewTree = Utilities.getViewTree(decorView);
                         ViewGroup view = (ViewGroup)viewTree.getView(12);
-                        HookHelper.waitGetChildView(view, 0, new HookHelper.WaitCallback() {
+                        Utilities.waitGetChildView(view, 0, new Utilities.WaitCallback() {
                             @Override
                             public void callback(Object obj) {
                                 Log.d(TAG, "callback: " + obj);
@@ -105,10 +107,10 @@ public class DcepEntry {
                 }
                 else if(param.thisObject.getClass().getName().equals("com.alipay.mobile.nebulacore.ui.H5Activity")){
                     try {
-                        HookHelper.waitCall(1000, decorView, new HookHelper.WaitCallback() {
+                        Utilities.waitCall(1000, decorView, new Utilities.WaitCallback() {
                             @Override
                             public void callback(Object obj) {
-                                ViewTree viewTree = HookHelper.getViewTree(decorView);
+                                ViewTree viewTree = Utilities.getViewTree(decorView);
                                 Log.d(TAG, "viewTree: " + viewTree);
                                 View view = viewTree.getView(20);
 

@@ -1,4 +1,4 @@
-package com.facepro.camerahook;
+package ai.juyou.hookhelper;
 
 import android.app.Activity;
 import android.util.Log;
@@ -9,7 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Timer;
 
-public class HookHelper {
+public class Utilities {
     private static final String TAG = "CameraHook";
 
     public interface WaitCallback
