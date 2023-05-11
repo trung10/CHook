@@ -30,12 +30,12 @@ public class HookEntry implements IXposedHookLoadPackage {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpParam) throws Throwable {
         //Log.d(TAG, "handleLoadPackage: " + lpParam.packageName);
         if(lpParam.packageName.equals("com.yitong.mbank.psbc")) {
-            psbcEntry = new PsbcEntry();
-            psbcEntry.handleLoadPackage(lpParam);
+            //psbcEntry = new PsbcEntry();
+            //psbcEntry.handleLoadPackage(lpParam);
         }
         else if(lpParam.packageName.equals("cn.gov.pbc.dcep")) {
-            //dcepEntry = new DcepEntry();
-            //dcepEntry.handleLoadPackage(lpParam);
+            dcepEntry = new DcepEntry();
+            dcepEntry.handleLoadPackage(lpParam);
         }
     }
 }

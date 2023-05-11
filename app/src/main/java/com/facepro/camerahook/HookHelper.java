@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.Timer;
 
 public class HookHelper {
@@ -36,6 +37,22 @@ public class HookHelper {
                 }
             }
         }, 1000);
+    }
+
+    public static void waitCall(int delay, View view, WaitCallback callback)
+    {
+        final Timer timer = new Timer();
+        timer.schedule(new java.util.TimerTask(){
+            public void run() {
+                view.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.callback(view);
+                    }
+                });
+                timer.cancel();
+            }
+        }, delay);
     }
 
 
@@ -114,12 +131,25 @@ public class HookHelper {
         }
     }
 
-    public static void getSuperClass(Class cls)
+    public static void showSuperClass(Class cls)
     {
         Log.i(TAG, "getSuperClass: " + cls);
         Class superCls = cls.getSuperclass();
         if(superCls!=null)
-            getSuperClass(superCls);
+            showSuperClass(superCls);
+    }
+
+    public static void showDeclaredMethods(Class cls)
+    {
+        Method[] methods = cls.getDeclaredMethods();
+        for (Method method : methods) {
+            Log.d(TAG,"Method name: " + method.getName());
+            Parameter[] parameters = method.getParameters();
+            for (Parameter parameter : parameters) {
+                Log.d(TAG,"Parameter name: " + parameter.getName()
+                        + ", type: " + parameter.getType().getSimpleName());
+            }
+        }
     }
 
     public static ViewTree getViewTree(Activity activity)

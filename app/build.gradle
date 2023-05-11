@@ -43,26 +43,26 @@ android {
 task installModule {
     dependsOn 'assembleDebug'
     doLast {
-        exec {
-            workingDir '.'
-            commandLine "adb", "shell", "am", "force-stop", "com.yitong.mbank.psbc"
-        }
 //        exec {
 //            workingDir '.'
-//            commandLine "adb", "shell", "am", "force-stop", "cn.gov.pbc.dcep"
+//            commandLine "adb", "shell", "am", "force-stop", "com.yitong.mbank.psbc"
 //        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "force-stop", "cn.gov.pbc.dcep"
+        }
         exec {
             workingDir '.'
             commandLine "adb", "install", "build/outputs/apk/debug/app-debug.apk"
         }
-        exec {
-            workingDir '.'
-            commandLine "adb", "shell", "am", "start", "com.yitong.mbank.psbc/com.yitong.mbank.psbc.module.home.view.activity.MainActivity"
-        }
 //        exec {
 //            workingDir '.'
-//            commandLine "adb", "shell", "am", "start", "cn.gov.pbc.dcep/cn.gov.pbc.dcep.DcepLauncherActivity"
+//            commandLine "adb", "shell", "am", "start", "com.yitong.mbank.psbc/com.yitong.mbank.psbc.module.home.view.activity.MainActivity"
 //        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "start", "cn.gov.pbc.dcep/cn.gov.pbc.dcep.DcepLauncherActivity"
+        }
     }
 }
 

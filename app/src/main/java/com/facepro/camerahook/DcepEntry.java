@@ -3,6 +3,13 @@ package com.facepro.camerahook;
 import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.webkit.ValueCallback;
+import android.widget.TextView;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -27,34 +34,13 @@ public class DcepEntry {
 
                 if(className.equals("com.alipay.mobile.framework.quinoxless.QuinoxlessApplication")
                         && processName.equals("cn.gov.pbc.dcep")) {
-
                     performLoadPackage(lpParam);
-
-//                        XposedBridge.hookAllConstructors(PathClassLoader.class, new XC_MethodHook() {
-//                            @Override
-//                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                                Object[] args = param.args;
-//                                for(Object arg : args)
-//                                {
-//                                    //Log.d(TAG, "PathClassLoader arg: " + arg);
-//                                }
-//                            }
-//                        });
-//                        XposedBridge.hookAllConstructors(DexClassLoader.class, new XC_MethodHook() {
-//                            @Override
-//                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-//                                Object[] args = param.args;
-//                                for(Object arg : args)
-//                                {
-//                                    //Log.d(TAG, "DexClassLoader arg: " + arg);
-//                                }
-//                            }
-//                        });
                 }
             }
         });
     }
 
+    private boolean isFirst = true;
 
     private void performLoadPackage(XC_LoadPackage.LoadPackageParam lpParam)
     {
@@ -63,9 +49,91 @@ public class DcepEntry {
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 Log.d(TAG, "onResume: " + param.thisObject);
                 Activity activity = (Activity)param.thisObject;
+                ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
 
+                if(param.thisObject.getClass().getName().equals("cn.gov.pbc.dcep.main.activity.MainActivity")) {
+                    if (!isFirst) return;
+                    isFirst = false;
+                    try {
 
+                        View v = HookHelper.findChildView(decorView, "我的");
+                        //Log.d(TAG, "v: " + v);
+                        ViewGroup item =(ViewGroup)v.getParent().getParent();
+
+                        //Log.d(TAG, "item: " + item);
+                        int itemId = item.getId();
+                        //Log.d(TAG, "itemId: " + itemId);
+                        ViewTree viewTree = HookHelper.getViewTree(decorView);
+                        View nav = viewTree.getView(40);
+                        XposedHelpers.callMethod(nav, "setSelectedItemId", itemId);
+
+                        HookHelper.waitFindChildView(decorView, "钱包总额", new HookHelper.WaitCallback() {
+                            @Override
+                            public void callback(Object obj) {
+                                TextView textView = (TextView) obj;
+                                ViewTree viewTree = HookHelper.getViewTree((ViewGroup)textView.getParent());
+                                View w = viewTree.getView(5);
+                                w.performClick();
+                            }
+                        });
+
+                        //NavigationBarView nav = (NavigationBarView) viewTree.getView(40);
+                        //nav.setSelectedItemId(itemId);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.e(TAG, "Exception: " + e.getMessage(),e);
+                    }
+
+                }
+                else if(param.thisObject.getClass().getName().equals("cn.gov.pbc.dcep.main.activity.WalletOverallActivity")){
+                    try {
+                        ViewTree viewTree = HookHelper.getViewTree(decorView);
+                        ViewGroup view = (ViewGroup)viewTree.getView(12);
+                        HookHelper.waitGetChildView(view, 0, new HookHelper.WaitCallback() {
+                            @Override
+                            public void callback(Object obj) {
+                                Log.d(TAG, "callback: " + obj);
+                                XposedHelpers.callMethod(obj, "performClick");
+                            }
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        Log.e(TAG, "Exception: " + e.getMessage(),e);
+                    }
+                }
+                else if(param.thisObject.getClass().getName().equals("com.alipay.mobile.nebulacore.ui.H5Activity")){
+                    try {
+                        HookHelper.waitCall(1000, decorView, new HookHelper.WaitCallback() {
+                            @Override
+                            public void callback(Object obj) {
+                                ViewTree viewTree = HookHelper.getViewTree(decorView);
+                                Log.d(TAG, "viewTree: " + viewTree);
+                                View view = viewTree.getView(20);
+
+                                XposedHelpers.callMethod(view, "evaluateJavascript", "document.documentElement.outerHTML", new ValueCallback(){
+                                    @Override
+                                    public void onReceiveValue(Object value) {
+                                        Log.d(TAG, "onReceiveValue: " + value);
+                                    }
+                                });
+
+                                //HookHelper.showSuperClass(view.getClass());
+                                //HookHelper.showDeclaredMethods(view.getClass());
+                            }
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        Log.e(TAG, "Exception: " + e.getMessage(),e);
+                    }
+                }
             }
         });
+
+
+
+
     }
 }
