@@ -26,7 +26,7 @@ public class ViewTree {
     private static void checkView(View view,List<View> mViewList, StringBuffer sb, String prefix)
     {
         mViewList.add(view);
-        String strId = prefix + view.getClass() + "@"+(mViewList.size()-1);
+        String strId = prefix + view.getClass() + ":"+view.hashCode() + "@"+(mViewList.size()-1);
         sb.append(strId).append("\n");
     }
 

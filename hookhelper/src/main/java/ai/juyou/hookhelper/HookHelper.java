@@ -12,6 +12,22 @@ import java.util.Timer;
 public class HookHelper {
     private static final String TAG = "CameraHook";
 
+    public static void waitCall(int delay, View view, WaitCallback callback)
+    {
+        final Timer timer = new Timer();
+        timer.schedule(new java.util.TimerTask(){
+            public void run() {
+                view.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.callback(view);
+                    }
+                });
+                timer.cancel();
+            }
+        }, delay);
+    }
+
     public static void waitGetChildView(ViewGroup root, int position, WaitCallback callback)
     {
         final Timer timer = new Timer();
@@ -32,22 +48,6 @@ public class HookHelper {
                 }
             }
         }, 1000);
-    }
-
-    public static void waitCall(int delay, View view, WaitCallback callback)
-    {
-        final Timer timer = new Timer();
-        timer.schedule(new java.util.TimerTask(){
-            public void run() {
-                view.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        callback.callback(view);
-                    }
-                });
-                timer.cancel();
-            }
-        }, delay);
     }
 
 
@@ -126,15 +126,15 @@ public class HookHelper {
         }
     }
 
-    public static void showSuperClass(Class cls)
+    public static void printSuperClass(Class cls)
     {
         Log.i(TAG, "getSuperClass: " + cls);
         Class superCls = cls.getSuperclass();
         if(superCls!=null)
-            showSuperClass(superCls);
+            printSuperClass(superCls);
     }
 
-    public static void showDeclaredMethods(Class cls)
+    public static void printDeclaredMethods(Class cls)
     {
         Method[] methods = cls.getDeclaredMethods();
         for (Method method : methods) {
