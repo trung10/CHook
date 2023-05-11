@@ -5,7 +5,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
-import ai.juyou.hookhelper.Utilities;
+import ai.juyou.hookhelper.HookHelper;
 import ai.juyou.hookhelper.ViewTree;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -26,7 +26,7 @@ public class WsEntry {
                 if(param.thisObject.getClass().getName().equals("com.whatsapp.HomeActivity")) {
                     Activity activity = (Activity)param.thisObject;
                     ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = Utilities.getViewTree(decorView);
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
                     //Log.d(TAG, "viewTree: " + viewTree);
                     View view = viewTree.getView(21);
                     //Log.d(TAG, "view: " + view);

@@ -2,17 +2,15 @@ package com.facepro.camerahook;
 
 import android.app.Activity;
 import android.app.Application;
-import android.hardware.Camera;
 import android.util.Log;
-import android.view.Surface;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
-import ai.juyou.hookhelper.Utilities;
+import ai.juyou.hookhelper.HookHelper;
 import ai.juyou.hookhelper.ViewTree;
+import ai.juyou.hookhelper.WaitCallback;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -63,14 +61,14 @@ public class PsbcEntry {
                     isFirst=false;
                     Activity activity = (Activity)param.thisObject;
                     ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = Utilities.getViewTree(decorView);
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
                     ViewGroup view = (ViewGroup)viewTree.getView(45);
-                    Utilities.waitGetChildView(view, 0, new Utilities.WaitCallback() {
+                    HookHelper.waitGetChildView(view, 0, new WaitCallback() {
                         @Override
                         public void callback(Object obj) {
                             //Log.d(TAG, "callback: " + obj);
                             ViewGroup view = (ViewGroup)obj;
-                            ViewTree viewTree = Utilities.getViewTree(view);
+                            ViewTree viewTree = HookHelper.getViewTree(view);
                             //Log.d(TAG, "viewTree: " + viewTree);
                             view.performClick();
                         }
@@ -80,7 +78,7 @@ public class PsbcEntry {
                 {
                     Activity activity = (Activity)param.thisObject;
                     final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = Utilities.getViewTree(decorView);
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
                     //Log.d(TAG, "viewTree: " + viewTree);
                     EditText editText = (EditText)viewTree.getView(35);
                     editText.setText("18694042031");
@@ -90,11 +88,11 @@ public class PsbcEntry {
                     button.performClick();
                     //Log.d(TAG, "textView: " + textView.getText());
 
-                    Utilities.waitFindChildView(decorView, "的登录密码",true, new Utilities.WaitCallback() {
+                    HookHelper.waitFindChildView(decorView, "的登录密码",true, new WaitCallback() {
                         @Override
                         public void callback(Object obj) {
                             //Log.d(TAG, "找到了: " + obj);
-                            ViewTree viewTree = Utilities.getViewTree(decorView);
+                            ViewTree viewTree = HookHelper.getViewTree(decorView);
                             //Log.d(TAG, "viewTree: " + viewTree);
                             EditText editText = (EditText)viewTree.getView(49);
                             editText.setText("w3312422");
@@ -107,7 +105,7 @@ public class PsbcEntry {
                 else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.app.view.activity.FaceCheckAuthActivity")){
                     Activity activity = (Activity)param.thisObject;
                     final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = Utilities.getViewTree(decorView);
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
                     //Log.d(TAG, "viewTree: " + viewTree);
                     CheckBox checkBox = (CheckBox)viewTree.getView(47);
                     checkBox.setChecked(true);

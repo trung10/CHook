@@ -9,13 +9,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Timer;
 
-public class Utilities {
+public class HookHelper {
     private static final String TAG = "CameraHook";
-
-    public interface WaitCallback
-    {
-        void callback(Object obj);
-    }
 
     public static void waitGetChildView(ViewGroup root, int position, WaitCallback callback)
     {
