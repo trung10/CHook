@@ -1,7 +1,6 @@
 package ai.juyou.remotecamera;
 
 public interface PullCallback {
-    void onConnect();
+    void onConnected(CameraDecoder cameraDecoder);
     void onDisconnect();
-    void onReceiveFrame(byte[] data);
 }

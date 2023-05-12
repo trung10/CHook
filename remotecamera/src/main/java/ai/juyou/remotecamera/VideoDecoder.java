@@ -10,14 +10,12 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.util.Size;
-
-
 import java.nio.ByteBuffer;
 
-final class VideoEncoder extends CameraEncoder implements Runnable {
+final class VideoDecoder extends CameraDecoder implements Runnable {
     private final static String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final long DEFAULT_TIMEOUT_US = 10000;
-    public static final int ENCODED = 1;
+    public static final int DECODED = 1;
     private final Size mSize;
     private final Callback mCallback;
     private MediaCodec mMediaCodec;
@@ -26,7 +24,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
     private Handler mMainHandler;
     private Handler mEncoderHandler;
 
-    public VideoEncoder(Size size, Callback callback)
+    public VideoDecoder(Size size, Callback callback)
     {
         mSize = size;
         mCallback = callback;
@@ -34,9 +32,9 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
         mMainHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                if (msg.what == ENCODED) {
+                if (msg.what == DECODED) {
                     byte[] data = (byte[]) msg.obj;
-                    callback.onEncoded(data);
+                    callback.onDecoded(data);
                 }
             }
         };
@@ -44,7 +42,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
 
     public void start(){
         try {
-            mMediaCodec = MediaCodec.createEncoderByType(MIME_TYPE);
+            mMediaCodec = MediaCodec.createDecoderByType(MIME_TYPE);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE, mSize.getWidth(), mSize.getHeight());
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
             mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, mSize.getWidth() * mSize.getHeight());
@@ -86,12 +84,12 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
     {
         return mIsRunning;
     }
-    @Override
+
     public void encode(Image image)
     {
         if(mIsRunning){
             byte[] buffer = ImageUtils.YUV_420_888toNV21(image);
-            mEncoderHandler.obtainMessage(ENCODED, buffer).sendToTarget();
+            mEncoderHandler.obtainMessage(DECODED, buffer).sendToTarget();
         }
         else{
             throw new IllegalStateException("VideoEncoder is not running");
@@ -115,7 +113,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
             if(mCallback!=null){
                 byte[] data = new byte[bufferInfo.size];
                 outputBuffer.get(data,bufferInfo.offset,bufferInfo.size);
-                mMainHandler.obtainMessage(ENCODED,data).sendToTarget();
+                mMainHandler.obtainMessage(DECODED,data).sendToTarget();
             }
             mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
@@ -128,7 +126,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
         mEncoderHandler = new Handler(Looper.myLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                if (msg.what == ENCODED) {
+                if (msg.what == DECODED) {
                     byte[] data = (byte[]) msg.obj;
                     long presentationTimeUs = System.nanoTime()/1000;
                     encode(data, presentationTimeUs);
@@ -140,7 +138,6 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
 
 
     public interface Callback {
-        void onEncoded(byte[] data);
+        void onDecoded(byte[] data);
     }
 }
-

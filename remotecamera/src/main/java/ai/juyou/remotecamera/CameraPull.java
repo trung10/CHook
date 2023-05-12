@@ -26,7 +26,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-class CameraPush {
+public class CameraPull {
 
     public static final int CONNECT_SUCCESS = 1;
     public static final int CONNECT_FAILED = 2;
@@ -36,18 +36,18 @@ class CameraPush {
     private final ServerConfig mConfig;
     private final Size mSize;
     private final Handler mHandler;
-    private final VideoEncoder mVideoEncoder;
+    private final VideoDecoder mVideoDecoder;
     private Thread mThread;
     private ChannelFuture channelFuture;
 
-    public CameraPush(ServerConfig config, Size size, Callback callback)
+    public CameraPull(ServerConfig config, Size size, Callback callback)
     {
         mConfig = config;
         mSize = size;
 
-        mVideoEncoder = new VideoEncoder(size, new VideoEncoder.Callback() {
+        mVideoDecoder = new VideoDecoder(size, new VideoDecoder.Callback() {
             @Override
-            public void onEncoded(byte[] data) {
+            public void onDecoded(byte[] data) {
                 if (channelFuture != null && channelFuture.channel().isActive()) {
                     ByteBuf buf = Unpooled.buffer(data.length);
                     buf.writeBytes(data);
@@ -60,38 +60,36 @@ class CameraPush {
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case CONNECT_SUCCESS:
-                        mVideoEncoder.start();
-                        callback.onConnected(mVideoEncoder);
+                        mVideoDecoder.start();
+                        callback.onConnected(mVideoDecoder);
                         break;
                     case CONNECT_FAILED:
-                        mVideoEncoder.stop();
+                        mVideoDecoder.stop();
                         callback.onConnectFailed();
                         break;
                     case MESSAGE_RECEIVED:
                         callback.onReceived((byte[]) msg.obj);
                         break;
                     case DISCONNECTED:
-                        mVideoEncoder.stop();
+                        mVideoDecoder.stop();
                         callback.onDisconnected();
                         break;
                     case ERROR:
-                        mVideoEncoder.stop();
+                        mVideoDecoder.stop();
                         callback.onError((Exception) msg.obj);
                         break;
                 }
             }
         };
     }
-
     public void connect()
     {
-        Log.d("CameraHook", "connect: " + mConfig.getServerAddress() + ":" + mConfig.getServerPort());
-        CameraPushHandler cameraPushHandler = new CameraPushHandler();
+        CameraPull.CameraPullHandler cameraPullHandler = new CameraPull.CameraPullHandler();
         mThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    CameraPush.this.run(cameraPushHandler);
+                    CameraPull.this.run(cameraPullHandler);
                 }
                 catch (InterruptedException e) {
                     mHandler.obtainMessage(ERROR,e).sendToTarget();
@@ -100,9 +98,8 @@ class CameraPush {
         });
         mThread.start();
     }
-
     public void disconnect() {
-        mVideoEncoder.stop();
+        mVideoDecoder.stop();
         if (channelFuture != null && channelFuture.channel().isActive()) {
             channelFuture.channel().close();
             channelFuture = null;
@@ -155,7 +152,7 @@ class CameraPush {
 
 
 
-    private class CameraPushHandler extends SimpleChannelInboundHandler<ByteBuf> {
+    private class CameraPullHandler extends SimpleChannelInboundHandler<ByteBuf> {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             cause.printStackTrace();
@@ -170,16 +167,8 @@ class CameraPush {
         }
     }
 
-//    public void send(byte[] data) {
-//        if (channelFuture != null && channelFuture.channel().isActive()) {
-//            ByteBuf buffer = Unpooled.buffer();
-//            buffer.writeBytes(data);
-//            channelFuture.channel().writeAndFlush(buffer);
-//        }
-//    }
-
     public interface Callback {
-        void onConnected(VideoEncoder videoEncoder);
+        void onConnected(VideoDecoder videoDecoder);
         void onConnectFailed();
         void onDisconnected();
         void onReceived(byte[] data);

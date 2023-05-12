@@ -7,6 +7,7 @@ public class RemoteCamera {
     private CameraPush mCameraPush;
     private ServerConfig mServerConfig;
     private PushCallback mPushCallback;
+    private PullCallback mPullCallback;
 
     public RemoteCamera() {
         mServerConfig = new ServerConfig("192.168.0.222",8020);
@@ -60,5 +61,9 @@ public class RemoteCamera {
 
     public void setPushCallback(PushCallback callback) {
         mPushCallback = callback;
+    }
+
+    public void setPullCallback(PullCallback callback) {
+        mPullCallback = callback;
     }
 }
