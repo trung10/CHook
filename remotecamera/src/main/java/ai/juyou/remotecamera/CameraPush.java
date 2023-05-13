@@ -40,7 +40,7 @@ class CameraPush {
     private Thread mThread;
     private ChannelFuture channelFuture;
 
-    public CameraPush(ServerConfig config, Size size, Callback callback)
+    public CameraPush(ServerConfig config, Size size, CameraPushCallback callback)
     {
         mConfig = config;
         mSize = size;
@@ -85,7 +85,6 @@ class CameraPush {
 
     public void connect()
     {
-        Log.d("CameraHook", "connect: " + mConfig.getServerAddress() + ":" + mConfig.getServerPort());
         CameraPushHandler cameraPushHandler = new CameraPushHandler();
         mThread = new Thread(new Runnable() {
             @Override
@@ -108,7 +107,6 @@ class CameraPush {
             channelFuture = null;
         }
     }
-
 
     private void run(ChannelHandler channelHandler) throws InterruptedException {
         EventLoopGroup group = new NioEventLoopGroup();
@@ -153,8 +151,6 @@ class CameraPush {
         }
     }
 
-
-
     private class CameraPushHandler extends SimpleChannelInboundHandler<ByteBuf> {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
@@ -168,21 +164,5 @@ class CameraPush {
             buf.readBytes(bytes);
             mHandler.obtainMessage(MESSAGE_RECEIVED,bytes).sendToTarget();
         }
-    }
-
-//    public void send(byte[] data) {
-//        if (channelFuture != null && channelFuture.channel().isActive()) {
-//            ByteBuf buffer = Unpooled.buffer();
-//            buffer.writeBytes(data);
-//            channelFuture.channel().writeAndFlush(buffer);
-//        }
-//    }
-
-    public interface Callback {
-        void onConnected(VideoEncoder videoEncoder);
-        void onConnectFailed();
-        void onDisconnected();
-        void onReceived(byte[] data);
-        void onError(Exception e);
     }
 }

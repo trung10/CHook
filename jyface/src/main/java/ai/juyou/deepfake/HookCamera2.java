@@ -6,6 +6,8 @@ import android.os.Handler;
 import android.util.Log;
 import android.util.Size;
 
+import java.nio.ByteBuffer;
+
 import ai.juyou.remotecamera.CameraDecoder;
 import ai.juyou.remotecamera.CameraEncoder;
 import ai.juyou.remotecamera.PullCallback;
@@ -91,6 +93,17 @@ public class HookCamera2 {
                     if(mCameraEncoder != null) {
                         mCameraEncoder.encode(image);
                     }
+                    if(mCameraDecoder != null) {
+                        mCameraDecoder.decode(image);
+                    }
+                    else{
+                        clearImage(image);
+                    }
+                    Image.Plane[] planes = image.getPlanes();
+                    for (int i = 0; i < planes.length; i++) {
+                        ByteBuffer buffer = planes[i].getBuffer();
+                        buffer.position(0);
+                    }
                 }
             });
 
@@ -98,6 +111,19 @@ public class HookCamera2 {
         catch (Exception e)
         {
             Log.e(TAG,"",e);
+        }
+    }
+
+    private void clearImage(Image image)
+    {
+        Image.Plane[] planes = image.getPlanes();
+        int size =0;
+        for (int i = 0; i < planes.length; i++) {
+            ByteBuffer buffer = planes[i].getBuffer();
+            buffer.position(0);
+            byte[] zeroBytes = new byte[buffer.remaining()];
+            buffer.put(zeroBytes);
+            size= size + zeroBytes.length;
         }
     }
 }

@@ -58,27 +58,30 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
 
             mIsRunning = true;
             return;
-        } catch (Exception ignored) {
-
+        } catch (Exception e) {
+            Log.e("CameraHook", "VideoEncoder start failed",e);
         }
         mIsRunning = false;
     }
 
     public void stop() {
-        mIsRunning = false;
-        mEncoderHandler.getLooper().quit();
-        if(mThread!=null){
-            try {
-                mThread.join();
-            } catch (InterruptedException ignored) {
+        if(mIsRunning)
+        {
+            mIsRunning = false;
+            mEncoderHandler.getLooper().quit();
+            if(mThread!=null){
+                try {
+                    mThread.join();
+                } catch (InterruptedException ignored) {
 
+                }
+                mThread = null;
             }
-            mThread = null;
-        }
-        if (mMediaCodec != null) {
-            mMediaCodec.stop();
-            mMediaCodec.release();
-            mMediaCodec = null;
+            if (mMediaCodec != null) {
+                mMediaCodec.stop();
+                mMediaCodec.release();
+                mMediaCodec = null;
+            }
         }
     }
 

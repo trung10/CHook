@@ -21,34 +21,20 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
     private MediaCodec mMediaCodec;
     private boolean mIsRunning = false;
     private Thread mThread;
-    private Handler mMainHandler;
-    private Handler mEncoderHandler;
+    private Handler mDecoderHandler;
+    private byte[] mBuffer;
 
     public VideoDecoder(Size size, Callback callback)
     {
         mSize = size;
         mCallback = callback;
-
-        mMainHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                if (msg.what == DECODED) {
-                    byte[] data = (byte[]) msg.obj;
-                    callback.onDecoded(data);
-                }
-            }
-        };
     }
 
     public void start(){
         try {
             mMediaCodec = MediaCodec.createDecoderByType(MIME_TYPE);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE, mSize.getWidth(), mSize.getHeight());
-            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-            mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, mSize.getWidth() * mSize.getHeight());
-            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
-            mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
-            mMediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            mMediaCodec.configure(mediaFormat, null, null, 0);
             mMediaCodec.start();
 
             mThread = new Thread(this);
@@ -56,28 +42,36 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
 
             mIsRunning = true;
             return;
-        } catch (Exception ignored) {
-
+        } catch (Exception e) {
+            Log.e("CameraHook", "VideoDecoder start failed",e);
         }
         mIsRunning = false;
     }
 
     public void stop() {
-        mIsRunning = false;
-        mEncoderHandler.getLooper().quit();
-        if(mThread!=null){
-            try {
-                mThread.join();
-            } catch (InterruptedException ignored) {
+        if(mIsRunning){
+            mIsRunning = false;
+            mDecoderHandler.getLooper().quit();
+            if(mThread!=null){
+                try {
+                    mThread.join();
+                } catch (InterruptedException ignored) {
 
+                }
+                mThread = null;
             }
-            mThread = null;
+            if (mMediaCodec != null) {
+                mMediaCodec.stop();
+                mMediaCodec.release();
+                mMediaCodec = null;
+            }
         }
-        if (mMediaCodec != null) {
-            mMediaCodec.stop();
-            mMediaCodec.release();
-            mMediaCodec = null;
-        }
+    }
+
+    @Override
+    public void decode(Image image)
+    {
+
     }
 
     public boolean isRunning()
@@ -85,25 +79,21 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         return mIsRunning;
     }
 
-    public void encode(Image image)
+    public void decode(byte[] data)
     {
         if(mIsRunning){
-            byte[] buffer = ImageUtils.YUV_420_888toNV21(image);
-            mEncoderHandler.obtainMessage(DECODED, buffer).sendToTarget();
-        }
-        else{
-            throw new IllegalStateException("VideoEncoder is not running");
+            mDecoderHandler.obtainMessage(DECODED, data).sendToTarget();
         }
     }
 
-    private void encode(byte[] yuv,long presentationTimeUs)
+    private void decode(byte[] data,long presentationTimeUs)
     {
         int inputBufferIndex = mMediaCodec.dequeueInputBuffer(DEFAULT_TIMEOUT_US);
         if (inputBufferIndex >= 0) {
             ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferIndex);
             inputBuffer.clear();
-            inputBuffer.put(yuv);
-            mMediaCodec.queueInputBuffer(inputBufferIndex, 0, yuv.length, presentationTimeUs, 0);
+            inputBuffer.put(data);
+            mMediaCodec.queueInputBuffer(inputBufferIndex, 0, data.length, presentationTimeUs, 0);
         }
 
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
@@ -111,9 +101,10 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         while (outputBufferIndex >= 0) {
             ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
             if(mCallback!=null){
-                byte[] data = new byte[bufferInfo.size];
-                outputBuffer.get(data,bufferInfo.offset,bufferInfo.size);
-                mMainHandler.obtainMessage(DECODED,data).sendToTarget();
+                //byte[] data = new byte[bufferInfo.size];
+                //outputBuffer.get(data,bufferInfo.offset,bufferInfo.size);
+                //mMainHandler.obtainMessage(DECODED,data).sendToTarget();
+                Log.d("CameraHook", "onDecoded: " + bufferInfo.size);
             }
             mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
@@ -123,13 +114,13 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
     @Override
     public void run() {
         Looper.prepare();
-        mEncoderHandler = new Handler(Looper.myLooper()) {
+        mDecoderHandler = new Handler(Looper.myLooper()) {
             @Override
             public void handleMessage(Message msg) {
                 if (msg.what == DECODED) {
                     byte[] data = (byte[]) msg.obj;
                     long presentationTimeUs = System.nanoTime()/1000;
-                    encode(data, presentationTimeUs);
+                    decode(data, presentationTimeUs);
                 }
             }
         };

@@ -40,7 +40,7 @@ public class CameraPull {
     private Thread mThread;
     private ChannelFuture channelFuture;
 
-    public CameraPull(ServerConfig config, Size size, Callback callback)
+    public CameraPull(ServerConfig config, Size size, CameraPullCallback callback)
     {
         mConfig = config;
         mSize = size;
@@ -55,12 +55,12 @@ public class CameraPull {
                 }
             }
         });
+        mVideoDecoder.start();
         mHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case CONNECT_SUCCESS:
-                        mVideoDecoder.start();
                         callback.onConnected(mVideoDecoder);
                         break;
                     case CONNECT_FAILED:
@@ -68,6 +68,7 @@ public class CameraPull {
                         callback.onConnectFailed();
                         break;
                     case MESSAGE_RECEIVED:
+                        mVideoDecoder.decode((byte[]) msg.obj);
                         callback.onReceived((byte[]) msg.obj);
                         break;
                     case DISCONNECTED:
@@ -120,7 +121,7 @@ public class CameraPull {
                             ChannelPipeline pipeline = channel.pipeline();
 
                             // 添加LengthFieldBasedFrameDecoder解决粘包问题
-                            pipeline.addLast(new LengthFieldBasedFrameDecoder(65535, 0, 2, 0, 2));
+                            //pipeline.addLast(new LengthFieldBasedFrameDecoder(65535, 0, 2, 0, 2));
 
                             pipeline.addLast(channelHandler);
                         }
@@ -150,8 +151,6 @@ public class CameraPull {
         }
     }
 
-
-
     private class CameraPullHandler extends SimpleChannelInboundHandler<ByteBuf> {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
@@ -167,11 +166,4 @@ public class CameraPull {
         }
     }
 
-    public interface Callback {
-        void onConnected(VideoDecoder videoDecoder);
-        void onConnectFailed();
-        void onDisconnected();
-        void onReceived(byte[] data);
-        void onError(Exception e);
-    }
 }

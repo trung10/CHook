@@ -1,48 +1,57 @@
 package ai.juyou.remotecamera;
 
+import android.util.Log;
 import android.util.Size;
 
 public class RemoteCamera {
-
+    private final ServerConfig mPushServerConfig;
+    private final ServerConfig mPullServerConfig;
     private CameraPush mCameraPush;
-    private ServerConfig mServerConfig;
+    private CameraPull mCameraPull;
     private PushCallback mPushCallback;
     private PullCallback mPullCallback;
 
     public RemoteCamera() {
-        mServerConfig = new ServerConfig("192.168.0.222",8020);
-
+        mPushServerConfig = new ServerConfig("192.168.0.222",8020);
+        mPullServerConfig = new ServerConfig("192.168.0.222",8030);
     }
 
     public void Open(Size size)
     {
         if(mCameraPush==null)
         {
-            mCameraPush = new CameraPush(mServerConfig, size,new CameraPush.Callback() {
+            mCameraPush = new CameraPush(mPushServerConfig, size,new CameraPushCallback() {
                 @Override
                 public void onConnected(VideoEncoder videoEncoder) {
                     if(mPushCallback != null){
                         mPushCallback.onConnected(videoEncoder);
                     }
-                }
+                    Log.d("CameraHook", "Push Connect: " + mPushServerConfig.getServerAddress() + ":" + mPushServerConfig.getServerPort());
+                    if(mCameraPull==null)
+                    {
+                        mCameraPull = new CameraPull(mPullServerConfig, size,new CameraPullCallback() {
+                            @Override
+                            public void onConnected(VideoDecoder videoDecoder) {
+                                if(mPullCallback != null){
+                                    mPullCallback.onConnected(videoDecoder);
+                                }
+                                Log.d("CameraHook", "Pull Connect: " + mPullServerConfig.getServerAddress() + ":" + mPullServerConfig.getServerPort());
 
-                @Override
-                public void onConnectFailed() {
+                            }
 
+                            @Override
+                            public void onDisconnected() {
+                                Log.d("CameraHook", "Pull disconnect");
+
+                            }
+                        });
+                        mCameraPull.connect();
+                    }
                 }
 
                 @Override
                 public void onDisconnected() {
-
-                }
-
-                @Override
-                public void onReceived(byte[] data) {
-
-                }
-
-                @Override
-                public void onError(Exception e) {
+                    Log.d("CameraHook", "Push disconnect");
 
                 }
             });
@@ -56,6 +65,11 @@ public class RemoteCamera {
         {
             mCameraPush.disconnect();
             mCameraPush = null;
+        }
+        if(mCameraPull != null)
+        {
+            mCameraPull.disconnect();
+            mCameraPull = null;
         }
     }
 
