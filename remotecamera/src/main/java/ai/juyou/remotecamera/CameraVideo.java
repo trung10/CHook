@@ -1,12 +1,11 @@
 package ai.juyou.remotecamera;
 
 
-import android.util.Log;
 import android.util.Size;
 
-public class Camera1 extends Camera {
+public class CameraVideo extends Camera {
 
-    public Camera1() {
+    public CameraVideo() {
         super();
     }
 
@@ -15,7 +14,7 @@ public class Camera1 extends Camera {
     {
         VideoEncoder videoEncoder = new VideoEncoder(size);
         VideoDecoder videoDecoder = new VideoDecoder(size);
-        Camera1Session session = new Camera1Session(videoEncoder, videoDecoder);
+        CameraVideoSession session = new CameraVideoSession(videoEncoder, videoDecoder);
         this.PushConnect(size, videoEncoder, session);
         this.PullConnect(size, videoDecoder, session);
     }

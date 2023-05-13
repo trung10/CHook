@@ -33,6 +33,9 @@ public abstract class Camera {
             @Override
             public void onDisconnected() {
                 Log.d("CameraHook", "Push disconnect");
+                if(mCallback!=null){
+                    mCallback.onPushDisconnected();
+                }
             }
         });
         mCameraPush.connect();

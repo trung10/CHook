@@ -1,15 +1,14 @@
 package ai.juyou.remotecamera;
 
 import android.media.Image;
-import android.util.Size;
 
 import java.nio.ByteBuffer;
 
-public class Camera1Session extends CameraSession {
+public class CameraVideoSession extends CameraSession {
 
     private final VideoEncoder mVideoEncoder;
     private final VideoDecoder mVideoDecoder;
-    public Camera1Session(VideoEncoder videoEncoder, VideoDecoder videoDecoder) {
+    public CameraVideoSession(VideoEncoder videoEncoder, VideoDecoder videoDecoder) {
         this.mVideoEncoder = videoEncoder;
         this.mVideoDecoder = videoDecoder;
     }

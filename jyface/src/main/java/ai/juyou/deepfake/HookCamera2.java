@@ -1,6 +1,5 @@
 package ai.juyou.deepfake;
 
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
@@ -18,10 +17,12 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import ai.juyou.remotecamera.Camera2;
-import ai.juyou.remotecamera.Camera2Session;
+import ai.juyou.remotecamera.CameraSurface;
+import ai.juyou.remotecamera.CameraSurfaceSession;
 import ai.juyou.remotecamera.CameraCallback;
 import ai.juyou.remotecamera.CameraSession;
+import ai.juyou.remotecamera.CameraVideo;
+import ai.juyou.remotecamera.CameraVideoSession;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -46,25 +47,25 @@ public class HookCamera2 {
     private List<Surface> mHookSurfaces;
 
     private final ImageReader.OnImageAvailableListener mHookImageAvailableListener;
-    private final Camera2 mCamera2;
+    private final CameraVideo mCamera;
     private ImageReader mOriginImageReader;
     private ImageReader.OnImageAvailableListener mOriginImageAvailableListener;
-    private Camera2Session mCameraSession;
+    private CameraVideoSession mCameraSession;
 
     public HookCamera2() {
-        mCamera2 = new Camera2();
-        mCamera2.setCallback(new CameraCallback() {
+        mCamera = new CameraVideo();
+        mCamera.setCallback(new CameraCallback() {
             @Override
             public void onPushConnected(CameraSession session) {
                 if(session != mCameraSession){
-                    mCameraSession = (Camera2Session)session;
+                    mCameraSession = (CameraVideoSession)session;
                 }
             }
 
             @Override
             public void onPullConnected(CameraSession session) {
                 if(session != mCameraSession){
-                    mCameraSession = (Camera2Session)session;
+                    mCameraSession = (CameraVideoSession)session;
                 }
             }
 
@@ -151,16 +152,16 @@ public class HookCamera2 {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     Surface surface = (Surface)param.args[0];
-                    Field field = XposedHelpers.findField(Surface.class,"mName");
-                    String mName = (String)field.get(surface);
-                    if(mName!=null){
-                        mOriginPreviewSurface = surface;
-                        param.args[0] = mHookPreviewSurface;
-                    }
-                    else{
-                        mOriginImageReaderSurface = surface;
-                        param.args[0] = mHookImageReaderSurface;
-                    }
+//                    Field field = XposedHelpers.findField(Surface.class,"mName");
+//                    String mName = (String)field.get(surface);
+//                    if(mName!=null){
+//                        mOriginPreviewSurface = surface;
+//                        param.args[0] = mHookPreviewSurface;
+//                    }
+//                    else{
+//                        mOriginImageReaderSurface = surface;
+//                        param.args[0] = mHookImageReaderSurface;
+//                    }
                     Log.d(TAG,"addTarget :" + surface);
                 }
             });
@@ -169,11 +170,11 @@ public class HookCamera2 {
             XposedHelpers.findAndHookMethod("android.hardware.camera2.impl.CameraDeviceImpl",lpParam.classLoader,"createCaptureSession", List.class,CameraCaptureSession.StateCallback.class,Handler.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    mOriginSurfaces = (List<Surface>)param.args[0];
-                    param.args[0] = mHookSurfaces;
-
-                    mOriginCameraCaptureSessionStateCallback = (CameraCaptureSession.StateCallback)param.args[1];
-                    param.args[1] = mHookCameraCaptureSessionStateCallback;
+//                    mOriginSurfaces = (List<Surface>)param.args[0];
+//                    param.args[0] = mHookSurfaces;
+//
+//                    mOriginCameraCaptureSessionStateCallback = (CameraCaptureSession.StateCallback)param.args[1];
+//                    param.args[1] = mHookCameraCaptureSessionStateCallback;
                     Log.d(TAG,"CameraCaptureSession createCaptureSession");
                 }
             });
@@ -194,13 +195,13 @@ public class HookCamera2 {
                         mOriginImageReader = (ImageReader)param.thisObject;
                         mOriginImageAvailableListener = listener;
                         param.args[0] = mHookImageAvailableListener;
-                        mCamera2.Open(new Size(mOriginImageReader.getWidth(), mOriginImageReader.getHeight()));
+                        mCamera.Open(new Size(mOriginImageReader.getWidth(), mOriginImageReader.getHeight()));
                     }
                     else{
                         if(param.thisObject== mOriginImageReader){
                             mOriginImageReader = null;
                             mOriginImageAvailableListener = null;
-                            mCamera2.Close();
+                            mCamera.Close();
                         }
                     }
                     Log.d(TAG,"setOnImageAvailableListener " + listener);
@@ -215,15 +216,15 @@ public class HookCamera2 {
                     {
                         Image image = (Image)param.getResult();
                         if(image!=null){
-//                            if(mCameraEncoder != null) {
-//                                mCameraEncoder.encode(image);
-//                            }
-//                            if(mCameraDecoder != null) {
-//                                mCameraDecoder.decode(image);
-//                            }
-//                            else{
-//                                clearImage(image);
-//                            }
+                            if(mCameraSession != null) {
+                                mCameraSession.encode(image);
+                            }
+                            if(mCameraSession != null) {
+                                mCameraSession.render(image);
+                            }
+                            else{
+                                clearImage(image);
+                            }
                             resetPosition(image);
                         }
                     }
