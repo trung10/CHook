@@ -34,18 +34,16 @@ class CameraPush {
     public static final int DISCONNECTED = 4;
     public static final int ERROR = 5;
     private final ServerConfig mConfig;
-    private final Size mSize;
     private final Handler mHandler;
-    private final VideoEncoder mVideoEncoder;
+    private final CameraEncoder mEncoder;
     private Thread mThread;
     private ChannelFuture channelFuture;
 
-    public CameraPush(ServerConfig config, Size size, CameraPushCallback callback)
+    public CameraPush(ServerConfig config, CameraEncoder encoder, CameraPushCallback callback)
     {
         mConfig = config;
-        mSize = size;
-
-        mVideoEncoder = new VideoEncoder(size, new VideoEncoder.Callback() {
+        mEncoder = encoder;
+        mEncoder.setCallback(new CameraEncoder.Callback() {
             @Override
             public void onEncoded(byte[] data) {
                 if (channelFuture != null && channelFuture.channel().isActive()) {
@@ -60,22 +58,22 @@ class CameraPush {
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case CONNECT_SUCCESS:
-                        mVideoEncoder.start();
-                        callback.onConnected(mVideoEncoder);
+                        mEncoder.start();
+                        callback.onConnected();
                         break;
                     case CONNECT_FAILED:
-                        mVideoEncoder.stop();
+                        mEncoder.stop();
                         callback.onConnectFailed();
                         break;
                     case MESSAGE_RECEIVED:
                         callback.onReceived((byte[]) msg.obj);
                         break;
                     case DISCONNECTED:
-                        mVideoEncoder.stop();
+                        mEncoder.stop();
                         callback.onDisconnected();
                         break;
                     case ERROR:
-                        mVideoEncoder.stop();
+                        mEncoder.stop();
                         callback.onError((Exception) msg.obj);
                         break;
                 }
@@ -101,7 +99,7 @@ class CameraPush {
     }
 
     public void disconnect() {
-        mVideoEncoder.stop();
+        mEncoder.stop();
         if (channelFuture != null && channelFuture.channel().isActive()) {
             channelFuture.channel().close();
             channelFuture = null;

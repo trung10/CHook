@@ -2,7 +2,7 @@ package ai.juyou.remotecamera;
 
 public abstract class CameraPushCallback {
 
-    public void onConnected(VideoEncoder videoEncoder)
+    public void onConnected()
     {
 
     }

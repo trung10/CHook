@@ -1,56 +1,126 @@
 package ai.juyou.deepfake;
 
+import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.util.Log;
 import android.util.Size;
+import android.view.Surface;
 
+import androidx.annotation.NonNull;
+
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.List;
 
-import ai.juyou.remotecamera.CameraDecoder;
-import ai.juyou.remotecamera.CameraEncoder;
-import ai.juyou.remotecamera.PullCallback;
-import ai.juyou.remotecamera.PushCallback;
-import ai.juyou.remotecamera.RemoteCamera;
+import ai.juyou.remotecamera.Camera2;
+import ai.juyou.remotecamera.Camera2Session;
+import ai.juyou.remotecamera.CameraCallback;
+import ai.juyou.remotecamera.CameraSession;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class HookCamera2 {
     private static final String TAG = "CameraHook";
+    private CameraDevice.StateCallback mOriginCameraDeviceStateCallback;
+    private CameraDevice.StateCallback mHookCameraDeviceStateCallback;
+    private CameraDevice mCameraDevice;
+
+    private CameraCaptureSession.StateCallback mOriginCameraCaptureSessionStateCallback;
+    private CameraCaptureSession.StateCallback mHookCameraCaptureSessionStateCallback;
+    private CameraCaptureSession mCameraCaptureSession;
+
+    private Surface mOriginPreviewSurface;
+    private Surface mOriginImageReaderSurface;
+
+    private Surface mHookPreviewSurface; //HOOK的预览Surface由解码器提供，解码器直接渲染到Hook的Surface上
+    private Surface mHookImageReaderSurface; //HOOK的ImageReaderSurface由编码器提供，编码器直接从Hook的ImageReaderSurface进行编码
+
+    private List<Surface> mOriginSurfaces;
+    private List<Surface> mHookSurfaces;
+
     private final ImageReader.OnImageAvailableListener mHookImageAvailableListener;
-    private final RemoteCamera mRemoteCamera;
+    private final Camera2 mCamera2;
     private ImageReader mOriginImageReader;
     private ImageReader.OnImageAvailableListener mOriginImageAvailableListener;
-    private CameraEncoder mCameraEncoder;
-    private CameraDecoder mCameraDecoder;
+    private Camera2Session mCameraSession;
 
     public HookCamera2() {
-        mRemoteCamera = new RemoteCamera();
-        mRemoteCamera.setPushCallback(new PushCallback() {
+        mCamera2 = new Camera2();
+        mCamera2.setCallback(new CameraCallback() {
             @Override
-            public void onConnected(CameraEncoder cameraPush) {
-                mCameraEncoder = cameraPush;
+            public void onPushConnected(CameraSession session) {
+                if(session != mCameraSession){
+                    mCameraSession = (Camera2Session)session;
+                }
             }
 
             @Override
-            public void onDisconnect() {
-                mCameraEncoder = null;
+            public void onPullConnected(CameraSession session) {
+                if(session != mCameraSession){
+                    mCameraSession = (Camera2Session)session;
+                }
+            }
+
+            @Override
+            public void onPushDisconnected() {
+
+            }
+
+            @Override
+            public void onPullDisconnected() {
+
             }
         });
 
-        mRemoteCamera.setPullCallback(new PullCallback() {
+        mHookCameraDeviceStateCallback = new CameraDevice.StateCallback() {
             @Override
-            public void onConnected(CameraDecoder cameraDecoder) {
-                mCameraDecoder = cameraDecoder;
+            public void onOpened(@NonNull CameraDevice camera) {
+                Log.d(TAG,"onOpened :" + camera);
+                mCameraDevice = camera;
+                if(mOriginCameraDeviceStateCallback!=null){
+                    mOriginCameraDeviceStateCallback.onOpened(camera);
+                }
             }
 
             @Override
-            public void onDisconnect() {
-                mCameraDecoder = null;
+            public void onDisconnected(@NonNull CameraDevice camera) {
+                if(mOriginCameraDeviceStateCallback!=null){
+                    mOriginCameraDeviceStateCallback.onDisconnected(camera);
+                }
             }
-        });
+
+            @Override
+            public void onError(@NonNull CameraDevice camera, int error) {
+                if(mOriginCameraDeviceStateCallback!=null){
+                    mOriginCameraDeviceStateCallback.onError(camera, error);
+                }
+            }
+        };
+
+        mHookCameraCaptureSessionStateCallback = new CameraCaptureSession.StateCallback() {
+            @Override
+            public void onConfigured(@NonNull CameraCaptureSession session) {
+                Log.d(TAG,"onConfigured :" + session);
+                mCameraCaptureSession = session;
+                if(mOriginCameraCaptureSessionStateCallback!=null){
+                    mOriginCameraCaptureSessionStateCallback.onConfigured(session);
+                }
+            }
+
+            @Override
+            public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                if(mOriginCameraCaptureSessionStateCallback!=null){
+                    mOriginCameraCaptureSessionStateCallback.onConfigureFailed(session);
+                }
+            }
+        };
 
         mHookImageAvailableListener = new ImageReader.OnImageAvailableListener() {
             @Override
@@ -65,6 +135,56 @@ public class HookCamera2 {
 
     public void hook(XC_LoadPackage.LoadPackageParam lpParam) {
         try {
+
+            XposedHelpers.findAndHookMethod(CameraManager.class,"openCamera", String.class,CameraDevice.StateCallback.class,Handler.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    String cameraId = (String)param.args[0];
+                    mOriginCameraDeviceStateCallback = (CameraDevice.StateCallback)param.args[1];
+                    param.args[1] = mHookCameraDeviceStateCallback;
+                    Log.d(TAG,"CameraManager openCamera:"+cameraId);
+                }
+            });
+
+
+            XposedHelpers.findAndHookMethod(CaptureRequest.Builder.class,"addTarget", Surface.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    Surface surface = (Surface)param.args[0];
+                    Field field = XposedHelpers.findField(Surface.class,"mName");
+                    String mName = (String)field.get(surface);
+                    if(mName!=null){
+                        mOriginPreviewSurface = surface;
+                        param.args[0] = mHookPreviewSurface;
+                    }
+                    else{
+                        mOriginImageReaderSurface = surface;
+                        param.args[0] = mHookImageReaderSurface;
+                    }
+                    Log.d(TAG,"addTarget :" + surface);
+                }
+            });
+
+
+            XposedHelpers.findAndHookMethod("android.hardware.camera2.impl.CameraDeviceImpl",lpParam.classLoader,"createCaptureSession", List.class,CameraCaptureSession.StateCallback.class,Handler.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    mOriginSurfaces = (List<Surface>)param.args[0];
+                    param.args[0] = mHookSurfaces;
+
+                    mOriginCameraCaptureSessionStateCallback = (CameraCaptureSession.StateCallback)param.args[1];
+                    param.args[1] = mHookCameraCaptureSessionStateCallback;
+                    Log.d(TAG,"CameraCaptureSession createCaptureSession");
+                }
+            });
+
+            XposedHelpers.findAndHookMethod("android.hardware.camera2.impl.CameraDeviceImpl",lpParam.classLoader,"close", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    Log.d(TAG,"CameraCaptureSession close");
+                }
+            });
+
             XposedHelpers.findAndHookMethod(ImageReader.class,"setOnImageAvailableListener", ImageReader.OnImageAvailableListener.class, Handler.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -74,15 +194,16 @@ public class HookCamera2 {
                         mOriginImageReader = (ImageReader)param.thisObject;
                         mOriginImageAvailableListener = listener;
                         param.args[0] = mHookImageAvailableListener;
-                        mRemoteCamera.Open(new Size(mOriginImageReader.getWidth(), mOriginImageReader.getHeight()));
+                        mCamera2.Open(new Size(mOriginImageReader.getWidth(), mOriginImageReader.getHeight()));
                     }
                     else{
                         if(param.thisObject== mOriginImageReader){
                             mOriginImageReader = null;
                             mOriginImageAvailableListener = null;
-                            mRemoteCamera.Close();
+                            mCamera2.Close();
                         }
                     }
+                    Log.d(TAG,"setOnImageAvailableListener " + listener);
                 }
             });
             XposedHelpers.findAndHookMethod(ImageReader.class,"acquireLatestImage", new XC_MethodHook() {
@@ -94,28 +215,20 @@ public class HookCamera2 {
                     {
                         Image image = (Image)param.getResult();
                         if(image!=null){
-                            if(mCameraEncoder != null) {
-                                mCameraEncoder.encode(image);
-                            }
-                            if(mCameraDecoder != null) {
-                                mCameraDecoder.decode(image);
-                            }
-                            else{
-                                clearImage(image);
-                            }
+//                            if(mCameraEncoder != null) {
+//                                mCameraEncoder.encode(image);
+//                            }
+//                            if(mCameraDecoder != null) {
+//                                mCameraDecoder.decode(image);
+//                            }
+//                            else{
+//                                clearImage(image);
+//                            }
                             resetPosition(image);
                         }
                     }
                 }
             });
-
-            XposedHelpers.findAndHookMethod(ImageReader.class,"acquireNextImage", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    Log.d(TAG,"acquireNextImage :" + param.getResult());
-                }
-            });
-
         }
         catch (Exception e)
         {
@@ -127,7 +240,7 @@ public class HookCamera2 {
     {
         Image.Plane[] planes = image.getPlanes();
         int size =0;
-        for (int i = 1; i < planes.length; i++) {
+        for (int i = 0; i < planes.length; i++) {
             ByteBuffer buffer = planes[i].getBuffer();
             buffer.position(0);
             byte[] zeroBytes = new byte[buffer.remaining()];

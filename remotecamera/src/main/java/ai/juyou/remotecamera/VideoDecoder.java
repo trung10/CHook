@@ -21,20 +21,19 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
     private static final long DEFAULT_TIMEOUT_US = 10000;
     public static final int DECODED = 1;
     private final Size mSize;
-    private final Callback mCallback;
     private MediaCodec mMediaCodec;
     private boolean mIsRunning = false;
     private Thread mThread;
     private Handler mDecoderHandler;
     private byte[] mBuffer;
 
-    public VideoDecoder(Size size, Callback callback)
+    public VideoDecoder(Size size)
     {
         mSize = size;
-        mCallback = callback;
         mBuffer = new byte[size.getWidth()*size.getHeight()*3/2];
     }
 
+    @Override
     public void start(){
         try {
             mMediaCodec = MediaCodec.createDecoderByType(MIME_TYPE);
@@ -53,6 +52,7 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         mIsRunning = false;
     }
 
+    @Override
     public void stop() {
         if(mIsRunning){
             mIsRunning = false;
@@ -73,47 +73,22 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         }
     }
 
-    @Override
-    public void decode(Image image)
-    {
-        synchronized (this) {
-            ByteBuffer yByteBuffer = image.getPlanes()[0].getBuffer();
-            yByteBuffer.position(0);
-            yByteBuffer.put(mBuffer, 0, mSize.getWidth()*mSize.getHeight());
-
-            ByteBuffer uByteBuffer = image.getPlanes()[1].getBuffer();
-            uByteBuffer.position(0);
-            ByteBuffer vByteBuffer = image.getPlanes()[2].getBuffer();
-            vByteBuffer.position(0);
-
-            final int width = mSize.getWidth();
-            final int height = mSize.getHeight();
-            final int size = width * height;
-            final int quarter = size / 4;
-            final int vPosition = size; // This is where V starts
-            final int uPosition = size + quarter; // This is where U starts
-
-            for (int i = 0; i < quarter; i++) {
-                //output[size + i*2 ] = input[vPosition + i]; // For NV21, V first
-                //output[size + i*2 + 1] = input[uPosition + i]; // For Nv21, U second
-                uByteBuffer.put(i*2, mBuffer[uPosition + i]);
-                if(i*2+1 < uByteBuffer.capacity()){
-                    uByteBuffer.put(i*2+1, mBuffer[vPosition + i]);
-                }
-                vByteBuffer.put(i*2, mBuffer[vPosition + i]);
-                if(i*2+1 < vByteBuffer.capacity()){
-                    vByteBuffer.put(i*2+1, mBuffer[uPosition + i]);
-                }
-
-            }
-        }
-    }
-
     public boolean isRunning()
     {
         return mIsRunning;
     }
 
+    public byte[] getBuffer()
+    {
+        return mBuffer;
+    }
+
+    public Size getSize()
+    {
+        return mSize;
+    }
+
+    @Override
     public void decode(byte[] data)
     {
         if(mIsRunning){
@@ -121,14 +96,19 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         }
     }
 
-    private void decode(byte[] data,long presentationTimeUs)
+    private int inputCount = 0;
+    private int outputCount = 0;
+    private int maxDelay = 0;
+
+    private void _decode(byte[] data)
     {
         int inputBufferIndex = mMediaCodec.dequeueInputBuffer(DEFAULT_TIMEOUT_US);
         if (inputBufferIndex >= 0) {
             ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferIndex);
             inputBuffer.clear();
             inputBuffer.put(data);
-            mMediaCodec.queueInputBuffer(inputBufferIndex, 0, data.length, presentationTimeUs, 0);
+            mMediaCodec.queueInputBuffer(inputBufferIndex, 0, data.length, 0, 0);
+            inputCount=inputCount+1;
         }
 
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
@@ -140,6 +120,9 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
                     outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
                 }
             }
+            outputCount=outputCount+1;
+            int delay = inputCount-outputCount;
+            maxDelay = Math.max(maxDelay, delay);
             mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
         }
@@ -159,8 +142,7 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
                     int nextFrameIndex = findByFrame(receivedData, 1, receivedData.length);
                     if(nextFrameIndex >= 0){
                         byte[] frameData = Arrays.copyOfRange(receivedData, 0, nextFrameIndex);
-                        long presentationTimeUs = System.nanoTime()/1000;
-                        decode(frameData, presentationTimeUs);
+                        _decode(frameData);
                         outputStream.reset();
                         try {
                             outputStream.write(Arrays.copyOfRange(receivedData, nextFrameIndex, receivedData.length));
@@ -184,7 +166,5 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         return -1;
     }
 
-    public interface Callback {
-        void onDecoded(byte[] data);
-    }
+
 }

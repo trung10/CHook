@@ -34,49 +34,37 @@ public class CameraPull {
     public static final int DISCONNECTED = 4;
     public static final int ERROR = 5;
     private final ServerConfig mConfig;
-    private final Size mSize;
     private final Handler mHandler;
-    private final VideoDecoder mVideoDecoder;
+    private final CameraDecoder mDecoder;
     private Thread mThread;
     private ChannelFuture channelFuture;
 
-    public CameraPull(ServerConfig config, Size size, CameraPullCallback callback)
+    public CameraPull(ServerConfig config, CameraDecoder decoder, CameraPullCallback callback)
     {
         mConfig = config;
-        mSize = size;
+        mDecoder = decoder;
 
-        mVideoDecoder = new VideoDecoder(size, new VideoDecoder.Callback() {
-            @Override
-            public void onDecoded(byte[] data) {
-                if (channelFuture != null && channelFuture.channel().isActive()) {
-                    ByteBuf buf = Unpooled.buffer(data.length);
-                    buf.writeBytes(data);
-                    channelFuture.channel().writeAndFlush(buf);
-                }
-            }
-        });
-        mVideoDecoder.start();
         mHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
                     case CONNECT_SUCCESS:
-                        callback.onConnected(mVideoDecoder);
+                        callback.onConnected();
                         break;
                     case CONNECT_FAILED:
-                        mVideoDecoder.stop();
+                        mDecoder.stop();
                         callback.onConnectFailed();
                         break;
                     case MESSAGE_RECEIVED:
-                        mVideoDecoder.decode((byte[]) msg.obj);
+                        mDecoder.decode((byte[]) msg.obj);
                         callback.onReceived((byte[]) msg.obj);
                         break;
                     case DISCONNECTED:
-                        mVideoDecoder.stop();
+                        mDecoder.stop();
                         callback.onDisconnected();
                         break;
                     case ERROR:
-                        mVideoDecoder.stop();
+                        mDecoder.stop();
                         callback.onError((Exception) msg.obj);
                         break;
                 }
@@ -85,6 +73,8 @@ public class CameraPull {
     }
     public void connect()
     {
+        mDecoder.start();
+
         CameraPull.CameraPullHandler cameraPullHandler = new CameraPull.CameraPullHandler();
         mThread = new Thread(new Runnable() {
             @Override
@@ -100,7 +90,7 @@ public class CameraPull {
         mThread.start();
     }
     public void disconnect() {
-        mVideoDecoder.stop();
+        mDecoder.stop();
         if (channelFuture != null && channelFuture.channel().isActive()) {
             channelFuture.channel().close();
             channelFuture = null;

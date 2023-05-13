@@ -19,29 +19,28 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
     private static final long DEFAULT_TIMEOUT_US = 10000;
     public static final int ENCODED = 1;
     private final Size mSize;
-    private final Callback mCallback;
     private MediaCodec mMediaCodec;
     private boolean mIsRunning = false;
     private Thread mThread;
     private Handler mMainHandler;
     private Handler mEncoderHandler;
 
-    public VideoEncoder(Size size, Callback callback)
+    public VideoEncoder(Size size)
     {
-        mSize = size;
-        mCallback = callback;
-
-        mMainHandler = new Handler(Looper.getMainLooper()) {
+        this.mSize = size;
+        this.mMainHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
                 if (msg.what == ENCODED) {
                     byte[] data = (byte[]) msg.obj;
-                    callback.onEncoded(data);
+                    if(mCallback!=null){
+                        mCallback.onEncoded(data);
+                    }
                 }
             }
         };
     }
-
+    @Override
     public void start(){
         try {
             mMediaCodec = MediaCodec.createEncoderByType(MIME_TYPE);
@@ -63,7 +62,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
         }
         mIsRunning = false;
     }
-
+    @Override
     public void stop() {
         if(mIsRunning)
         {
@@ -89,15 +88,12 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
     {
         return mIsRunning;
     }
-    @Override
+
     public void encode(Image image)
     {
         if(mIsRunning){
             byte[] buffer = ImageUtils.YUV_420_888toNV21(image);
             mEncoderHandler.obtainMessage(ENCODED, buffer).sendToTarget();
-        }
-        else{
-            throw new IllegalStateException("VideoEncoder is not running");
         }
     }
 
@@ -139,11 +135,6 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
             }
         };
         Looper.loop();
-    }
-
-
-    public interface Callback {
-        void onEncoded(byte[] data);
     }
 }
 
