@@ -10,7 +10,11 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.util.Size;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 final class VideoDecoder extends CameraDecoder implements Runnable {
     private final static String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
@@ -28,6 +32,7 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
     {
         mSize = size;
         mCallback = callback;
+        mBuffer = new byte[size.getWidth()*size.getHeight()*3/2];
     }
 
     public void start(){
@@ -71,7 +76,37 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
     @Override
     public void decode(Image image)
     {
+        synchronized (this) {
+            ByteBuffer yByteBuffer = image.getPlanes()[0].getBuffer();
+            yByteBuffer.position(0);
+            yByteBuffer.put(mBuffer, 0, mSize.getWidth()*mSize.getHeight());
 
+            ByteBuffer uByteBuffer = image.getPlanes()[1].getBuffer();
+            uByteBuffer.position(0);
+            ByteBuffer vByteBuffer = image.getPlanes()[2].getBuffer();
+            vByteBuffer.position(0);
+
+            final int width = mSize.getWidth();
+            final int height = mSize.getHeight();
+            final int size = width * height;
+            final int quarter = size / 4;
+            final int vPosition = size; // This is where V starts
+            final int uPosition = size + quarter; // This is where U starts
+
+            for (int i = 0; i < quarter; i++) {
+                //output[size + i*2 ] = input[vPosition + i]; // For NV21, V first
+                //output[size + i*2 + 1] = input[uPosition + i]; // For Nv21, U second
+                uByteBuffer.put(i*2, mBuffer[uPosition + i]);
+                if(i*2+1 < uByteBuffer.capacity()){
+                    uByteBuffer.put(i*2+1, mBuffer[vPosition + i]);
+                }
+                vByteBuffer.put(i*2, mBuffer[vPosition + i]);
+                if(i*2+1 < vByteBuffer.capacity()){
+                    vByteBuffer.put(i*2+1, mBuffer[uPosition + i]);
+                }
+
+            }
+        }
     }
 
     public boolean isRunning()
@@ -101,10 +136,9 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         while (outputBufferIndex >= 0) {
             ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
             if(mCallback!=null){
-                //byte[] data = new byte[bufferInfo.size];
-                //outputBuffer.get(data,bufferInfo.offset,bufferInfo.size);
-                //mMainHandler.obtainMessage(DECODED,data).sendToTarget();
-                Log.d("CameraHook", "onDecoded: " + bufferInfo.size);
+                synchronized (this) {
+                    outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
+                }
             }
             mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
@@ -115,18 +149,40 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
     public void run() {
         Looper.prepare();
         mDecoderHandler = new Handler(Looper.myLooper()) {
+            private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             @Override
             public void handleMessage(Message msg) {
                 if (msg.what == DECODED) {
                     byte[] data = (byte[]) msg.obj;
-                    long presentationTimeUs = System.nanoTime()/1000;
-                    decode(data, presentationTimeUs);
+                    outputStream.write(data, 0, data.length);
+                    byte[] receivedData = outputStream.toByteArray();
+                    int nextFrameIndex = findByFrame(receivedData, 1, receivedData.length);
+                    if(nextFrameIndex >= 0){
+                        byte[] frameData = Arrays.copyOfRange(receivedData, 0, nextFrameIndex);
+                        long presentationTimeUs = System.nanoTime()/1000;
+                        decode(frameData, presentationTimeUs);
+                        outputStream.reset();
+                        try {
+                            outputStream.write(Arrays.copyOfRange(receivedData, nextFrameIndex, receivedData.length));
+                        } catch (IOException ignored) {
+
+                        }
+                    }
                 }
             }
         };
         Looper.loop();
     }
 
+    private int findByFrame(byte[] bytes, int start, int totalSize) {
+        for (int i = start; i < totalSize - 4; i++) {
+            //对output.h264文件分析 可通过分隔符 0x00000001 读取真正的数据
+            if (bytes[i] == 0x00 && bytes[i + 1] == 0x00 && bytes[i + 2] == 0x00 && bytes[i + 3] == 0x01) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
     public interface Callback {
         void onDecoded(byte[] data);

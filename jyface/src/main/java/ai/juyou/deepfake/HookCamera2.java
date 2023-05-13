@@ -85,25 +85,34 @@ public class HookCamera2 {
                     }
                 }
             });
+            XposedHelpers.findAndHookMethod(ImageReader.class,"acquireLatestImage", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    //param.setResult(null);
+
+                    if(param.thisObject==mOriginImageReader)
+                    {
+                        Image image = (Image)param.getResult();
+                        if(image!=null){
+                            if(mCameraEncoder != null) {
+                                mCameraEncoder.encode(image);
+                            }
+                            if(mCameraDecoder != null) {
+                                mCameraDecoder.decode(image);
+                            }
+                            else{
+                                clearImage(image);
+                            }
+                            resetPosition(image);
+                        }
+                    }
+                }
+            });
 
             XposedHelpers.findAndHookMethod(ImageReader.class,"acquireNextImage", new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    Image image = (Image)param.getResult();
-                    if(mCameraEncoder != null) {
-                        mCameraEncoder.encode(image);
-                    }
-                    if(mCameraDecoder != null) {
-                        mCameraDecoder.decode(image);
-                    }
-                    else{
-                        clearImage(image);
-                    }
-                    Image.Plane[] planes = image.getPlanes();
-                    for (int i = 0; i < planes.length; i++) {
-                        ByteBuffer buffer = planes[i].getBuffer();
-                        buffer.position(0);
-                    }
+                    Log.d(TAG,"acquireNextImage :" + param.getResult());
                 }
             });
 
@@ -118,12 +127,21 @@ public class HookCamera2 {
     {
         Image.Plane[] planes = image.getPlanes();
         int size =0;
-        for (int i = 0; i < planes.length; i++) {
+        for (int i = 1; i < planes.length; i++) {
             ByteBuffer buffer = planes[i].getBuffer();
             buffer.position(0);
             byte[] zeroBytes = new byte[buffer.remaining()];
             buffer.put(zeroBytes);
             size= size + zeroBytes.length;
+        }
+    }
+
+    private void resetPosition(Image image)
+    {
+        Image.Plane[] planes = image.getPlanes();
+        for (int i = 0; i < planes.length; i++) {
+            ByteBuffer buffer = planes[i].getBuffer();
+            buffer.position(0);
         }
     }
 }
