@@ -45,9 +45,9 @@ public class WsEntry {
                     HookHelper.waitCall(1000,decorView, new WaitCallback() {
                         @Override
                         public void callback(Object obj) {
-//                            ViewTree viewTree = HookHelper.getViewTree(decorView);
-//                            View v = viewTree.getView(35);
-//                            v.performClick();
+                            ViewTree viewTree = HookHelper.getViewTree(decorView);
+                            View v = viewTree.getView(35);
+                            v.performClick();
                         }
                     });
                 }

@@ -1,11 +1,16 @@
 package ai.juyou.remotecamera;
 
+import android.graphics.ImageFormat;
 import android.media.Image;
 
 import java.nio.ByteBuffer;
 
 final class ImageUtils {
 
+    public static byte[] YUV_420_888toNV21_1(Image image) {
+        YuvConverter converter = new YuvConverter();
+        return converter.imageToNV21(image);
+    }
     public static byte[] YUV_420_888toNV21(Image image) {
 
         int width = image.getWidth();

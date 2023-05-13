@@ -24,6 +24,7 @@ import ai.juyou.remotecamera.CameraSession;
 import ai.juyou.remotecamera.CameraVideo;
 import ai.juyou.remotecamera.CameraVideoSession;
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
@@ -209,15 +210,15 @@ public class HookCamera2 {
                     Log.d(TAG,"setOnImageAvailableListener " + listener);
                 }
             });
-            XposedHelpers.findAndHookMethod(ImageReader.class,"acquireLatestImage", new XC_MethodHook() {
+            XposedBridge.hookAllMethods(ImageReader.class, "acquireNextSurfaceImage", new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    //param.setResult(null);
-
-                    if(param.thisObject==mOriginImageReader)
-                    {
-                        Image image = (Image)param.getResult();
+                    super.afterHookedMethod(param);
+                    int state = (int)param.getResult();
+                    if(state==0){
+                        Image image = (Image)param.args[0];
                         if(image!=null){
+                            long startTime = System.currentTimeMillis();
                             if(mCameraSession != null) {
                                 mCameraSession.encode(image);
                             }
@@ -227,9 +228,7 @@ public class HookCamera2 {
                             else{
                                 clearImage(image);
                             }
-                            //resetPosition(image);
-                            //long delay = mCamera.getDelay();
-                            //Log.d(TAG,"acquireLatestImage delay:" + delay);
+                            Log.d(TAG,"acquireNextSurfaceImage cost:" + (System.currentTimeMillis() - startTime));
                         }
                     }
                 }
