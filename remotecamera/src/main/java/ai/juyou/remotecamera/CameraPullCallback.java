@@ -1,6 +1,6 @@
 package ai.juyou.remotecamera;
 
-public abstract class CameraPullCallback {
+abstract class CameraPullCallback {
     public void onConnected()
     {
 

@@ -38,12 +38,22 @@ public class CameraPull {
     private final CameraDecoder mDecoder;
     private Thread mThread;
     private ChannelFuture channelFuture;
+    private long mPullCount = 0;
+    private long mDecodeCount = 0;
 
     public CameraPull(ServerConfig config, CameraDecoder decoder, CameraPullCallback callback)
     {
         mConfig = config;
         mDecoder = decoder;
 
+        decoder.start();
+        decoder.setCallback(new CameraDecoder.Callback() {
+            @Override
+            public void onDecoded(byte[] data) {
+                mDecodeCount++;
+                //Log.d("CameraHook", "delay: " + (mPullCount - mDecodeCount));
+            }
+        });
         mHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -71,6 +81,7 @@ public class CameraPull {
             }
         };
     }
+
     public void connect()
     {
         mDecoder.start();
@@ -111,7 +122,7 @@ public class CameraPull {
                             ChannelPipeline pipeline = channel.pipeline();
 
                             // 添加LengthFieldBasedFrameDecoder解决粘包问题
-                            //pipeline.addLast(new LengthFieldBasedFrameDecoder(65535, 0, 2, 0, 2));
+                            pipeline.addLast(new LengthFieldBasedFrameDecoder(65535*100, 0, 4, 0, 4));
 
                             pipeline.addLast(channelHandler);
                         }
@@ -152,6 +163,7 @@ public class CameraPull {
         protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) {
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
+            mPullCount++;
             mHandler.obtainMessage(MESSAGE_RECEIVED,bytes).sendToTarget();
         }
     }

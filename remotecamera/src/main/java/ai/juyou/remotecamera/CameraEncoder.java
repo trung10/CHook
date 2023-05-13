@@ -11,7 +11,8 @@ public abstract class CameraEncoder {
     public void setCallback(Callback callback) {
         this.mCallback = callback;
     }
-    public interface Callback {
+    public interface Callback
+    {
         void onEncoded(byte[] data);
     }
 }

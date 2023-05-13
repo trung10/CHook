@@ -39,6 +39,8 @@ class CameraPush {
     private Thread mThread;
     private ChannelFuture channelFuture;
 
+    private long mPushCount = 0;
+
     public CameraPush(ServerConfig config, CameraEncoder encoder, CameraPushCallback callback)
     {
         mConfig = config;
@@ -46,6 +48,7 @@ class CameraPush {
         mEncoder.setCallback(new CameraEncoder.Callback() {
             @Override
             public void onEncoded(byte[] data) {
+                mPushCount++;
                 if (channelFuture != null && channelFuture.channel().isActive()) {
                     ByteBuf buf = Unpooled.buffer(data.length);
                     buf.writeBytes(data);
@@ -79,6 +82,11 @@ class CameraPush {
                 }
             }
         };
+    }
+
+    public long getPushCount()
+    {
+        return mPushCount;
     }
 
     public void connect()

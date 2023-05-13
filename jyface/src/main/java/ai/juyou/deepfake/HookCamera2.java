@@ -134,6 +134,9 @@ public class HookCamera2 {
         };
     }
 
+    long lastTime = 0;
+    int fps= 0;
+
     public void hook(XC_LoadPackage.LoadPackageParam lpParam) {
         try {
 
@@ -152,8 +155,8 @@ public class HookCamera2 {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     Surface surface = (Surface)param.args[0];
-//                    Field field = XposedHelpers.findField(Surface.class,"mName");
-//                    String mName = (String)field.get(surface);
+                    Field field = XposedHelpers.findField(Surface.class,"mName");
+                    String mName = (String)field.get(surface);
 //                    if(mName!=null){
 //                        mOriginPreviewSurface = surface;
 //                        param.args[0] = mHookPreviewSurface;
@@ -175,14 +178,14 @@ public class HookCamera2 {
 //
 //                    mOriginCameraCaptureSessionStateCallback = (CameraCaptureSession.StateCallback)param.args[1];
 //                    param.args[1] = mHookCameraCaptureSessionStateCallback;
-                    Log.d(TAG,"CameraCaptureSession createCaptureSession");
+                    //Log.d(TAG,"CameraCaptureSession createCaptureSession");
                 }
             });
 
             XposedHelpers.findAndHookMethod("android.hardware.camera2.impl.CameraDeviceImpl",lpParam.classLoader,"close", new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    Log.d(TAG,"CameraCaptureSession close");
+                    //Log.d(TAG,"CameraCaptureSession close");
                 }
             });
 
@@ -190,7 +193,6 @@ public class HookCamera2 {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     ImageReader.OnImageAvailableListener listener = (ImageReader.OnImageAvailableListener)param.args[0];
-
                     if(listener != null){
                         mOriginImageReader = (ImageReader)param.thisObject;
                         mOriginImageAvailableListener = listener;
@@ -225,7 +227,9 @@ public class HookCamera2 {
                             else{
                                 clearImage(image);
                             }
-                            resetPosition(image);
+                            //resetPosition(image);
+                            //long delay = mCamera.getDelay();
+                            //Log.d(TAG,"acquireLatestImage delay:" + delay);
                         }
                     }
                 }
