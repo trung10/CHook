@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">jyface</string>
+    <string name="app_name">聚友云换脸</string>
+    <string name="app_description">视频聊天，实时换脸</string>
 </resources>
