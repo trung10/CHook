@@ -51,6 +51,24 @@ task installModule {
     }
 }
 
+task testTelegram {
+    dependsOn 'assembleDebug'
+    doLast {
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "force-stop", "org.telegram.messenger.web"
+        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "install", "build/outputs/apk/debug/jyface-debug.apk"
+        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "start", "org.telegram.messenger.web/org.telegram.ui.LaunchActivity"
+        }
+    }
+}
+
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
