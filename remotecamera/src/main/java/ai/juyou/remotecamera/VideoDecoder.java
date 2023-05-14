@@ -110,6 +110,9 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
         if(outputBufferIndex>=0){
             ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
+            if(outputBuffer.hasArray()){
+                Log.d("CameraHook", "outputBuffer has array");
+            }
             synchronized (this) {
                 outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
                 if(mCallback!=null){
