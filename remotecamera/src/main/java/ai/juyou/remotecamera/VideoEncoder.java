@@ -23,11 +23,13 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
     private boolean mIsRunning = false;
     private Thread mThread;
     private Handler mMainHandler;
-    private Handler mEncoderHandler;
+    private byte[] mBuffer;
 
     public VideoEncoder(Size size)
     {
         this.mSize = size;
+        this.mBuffer = new byte[size.getWidth()*size.getHeight()*3/2];
+
         this.mMainHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -46,7 +48,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
             mMediaCodec = MediaCodec.createEncoderByType(MIME_TYPE);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE, mSize.getWidth(), mSize.getHeight());
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-            mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, mSize.getWidth() * mSize.getHeight());
+            mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, mSize.getWidth() * mSize.getHeight()*10);
             mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
             mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
             mMediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -67,7 +69,6 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
         if(mIsRunning)
         {
             mIsRunning = false;
-            mEncoderHandler.getLooper().quit();
             if(mThread!=null){
                 try {
                     mThread.join();
@@ -92,49 +93,41 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
     public void encode(Image image)
     {
         if(mIsRunning){
-            byte[] buffer = ImageUtils.YUV_420_888toNV21(image);
-            mEncoderHandler.obtainMessage(ENCODED, buffer).sendToTarget();
-        }
-    }
-
-    private void encode(byte[] yuv,long presentationTimeUs)
-    {
-        int inputBufferIndex = mMediaCodec.dequeueInputBuffer(DEFAULT_TIMEOUT_US);
-        if (inputBufferIndex >= 0) {
-            ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferIndex);
-            inputBuffer.clear();
-            inputBuffer.put(yuv);
-            mMediaCodec.queueInputBuffer(inputBufferIndex, 0, yuv.length, presentationTimeUs, 0);
-        }
-
-        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
-        while (outputBufferIndex >= 0) {
-            ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
-            if(mCallback!=null){
-                byte[] data = new byte[bufferInfo.size];
-                outputBuffer.get(data,bufferInfo.offset,bufferInfo.size);
-                mMainHandler.obtainMessage(ENCODED,data).sendToTarget();
-            }
-            mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
-            outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
+            mBuffer = ImageUtils.YUV_420_888toNV21(image);
         }
     }
 
     @Override
     public void run() {
-        Looper.prepare();
-        mEncoderHandler = new Handler(Looper.myLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                if (msg.what == ENCODED) {
-                    byte[] data = (byte[]) msg.obj;
-                    long presentationTimeUs = System.nanoTime()/1000;
-                    encode(data, presentationTimeUs);
-                }
+        while (mIsRunning)
+        {
+            long presentationTimeUs = System.nanoTime()/1000;
+            int inputBufferIndex = mMediaCodec.dequeueInputBuffer(DEFAULT_TIMEOUT_US);
+            if (inputBufferIndex >= 0) {
+                ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferIndex);
+                inputBuffer.clear();
+                inputBuffer.put(mBuffer);
+                int len = mSize.getWidth()*mSize.getHeight()*3/2;
+                mMediaCodec.queueInputBuffer(inputBufferIndex, 0, len, presentationTimeUs, 0);
             }
-        };
-        Looper.loop();
+
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+            int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
+            while (outputBufferIndex >= 0) {
+                ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
+                if(mCallback!=null){
+                    byte[] data = new byte[bufferInfo.size];
+                    outputBuffer.get(data,bufferInfo.offset,bufferInfo.size);
+                    mMainHandler.obtainMessage(ENCODED,data).sendToTarget();
+                }
+                mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
+                outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ignored) {
+            }
+        }
     }
 }
 

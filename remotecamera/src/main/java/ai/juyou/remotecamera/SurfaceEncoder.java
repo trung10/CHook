@@ -100,8 +100,8 @@ public class SurfaceEncoder extends CameraEncoder  implements Runnable {
     public void encode(Image image)
     {
         if(mIsRunning){
-            byte[] buffer = ImageUtils.YUV_420_888toNV21(image);
-            mEncoderHandler.obtainMessage(ENCODED, buffer).sendToTarget();
+//            byte[] buffer = ImageUtils.YUV_420_888toNV21(image);
+//            mEncoderHandler.obtainMessage(ENCODED, buffer).sendToTarget();
         }
     }
 

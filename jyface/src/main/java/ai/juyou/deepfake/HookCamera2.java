@@ -222,13 +222,15 @@ public class HookCamera2 {
                             if(mCameraSession != null) {
                                 mCameraSession.encode(image);
                             }
+                            //Log.d(TAG,"encode cost:" + (System.currentTimeMillis() - startTime));
+                            startTime = System.currentTimeMillis();
                             if(mCameraSession != null) {
                                 mCameraSession.render(image);
                             }
                             else{
                                 clearImage(image);
                             }
-                            Log.d(TAG,"acquireNextSurfaceImage cost:" + (System.currentTimeMillis() - startTime));
+                            //Log.d(TAG,"render cost:" + (System.currentTimeMillis() - startTime));
                         }
                     }
                 }
