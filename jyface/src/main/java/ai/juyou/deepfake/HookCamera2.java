@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import ai.juyou.hookhelper.HookHelper;
 import ai.juyou.remotecamera.CameraSurface;
 import ai.juyou.remotecamera.CameraSurfaceSession;
 import ai.juyou.remotecamera.CameraCallback;
@@ -166,7 +167,8 @@ public class HookCamera2 {
 //                        mOriginImageReaderSurface = surface;
 //                        param.args[0] = mHookImageReaderSurface;
 //                    }
-                    Log.d(TAG,"addTarget :" + surface);
+                    HookHelper.printStackTrace();
+                    //Log.d(TAG,"addTarget :" + surface);
                 }
             });
 
@@ -179,7 +181,8 @@ public class HookCamera2 {
 //
 //                    mOriginCameraCaptureSessionStateCallback = (CameraCaptureSession.StateCallback)param.args[1];
 //                    param.args[1] = mHookCameraCaptureSessionStateCallback;
-                    //Log.d(TAG,"CameraCaptureSession createCaptureSession");
+                    Log.d(TAG,"CameraCaptureSession createCaptureSession"+param.args[0]);
+                    Log.d(TAG,"CameraCaptureSession createCaptureSession");
                 }
             });
 

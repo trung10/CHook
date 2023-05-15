@@ -21,6 +21,12 @@ public class WsEntry {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpParam) throws Throwable {
         hookCamera = new HookCamera2();
         hookCamera.hook(lpParam);
+
+        //handleUI(lpParam);
+    }
+
+    private void handleUI(XC_LoadPackage.LoadPackageParam lpParam)
+    {
         XposedHelpers.findAndHookMethod(Activity.class, "onResume", new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {

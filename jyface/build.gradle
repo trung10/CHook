@@ -33,7 +33,7 @@ android {
     }
 }
 
-task installModule {
+task testWhatsApp {
     dependsOn 'assembleDebug'
     doLast {
         exec {
