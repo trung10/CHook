@@ -28,6 +28,7 @@ public class HookEntry implements IXposedHookLoadPackage {
 
     DcepEntry dcepEntry;
     PsbcEntry psbcEntry;
+    TestEntry testEntry;
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpParam) throws Throwable {
         Log.d(TAG, "handleLoadPackage: " + lpParam.packageName);
@@ -38,6 +39,10 @@ public class HookEntry implements IXposedHookLoadPackage {
         else if(lpParam.packageName.equals("cn.gov.pbc.dcep")) {
             dcepEntry = new DcepEntry();
             dcepEntry.handleLoadPackage(lpParam);
+        }
+        else if(lpParam.packageName.equals("ai.juyou.testapp")) {
+            testEntry = new TestEntry();
+            testEntry.handleLoadPackage(lpParam);
         }
     }
 }

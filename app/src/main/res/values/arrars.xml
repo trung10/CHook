@@ -3,5 +3,6 @@
     <string-array name="xposed_scope">
         <item>com.yitong.mbank.psbc</item>
         <item>cn.gov.pbc.dcep</item>
+        <item>ai.juyou.testapp</item>
     </string-array>
 </resources>

@@ -29,7 +29,7 @@ public class PsbcActivityHook extends ActivityHook {
     private final Callback hookMainActivityCallback = new Callback() {
         @Override
         public void onHook(Activity activity) {
-            HttpServer.start(activity);
+
 
             ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
             ViewTree viewTree = HookHelper.getViewTree(decorView);

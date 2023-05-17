@@ -76,6 +76,26 @@ task testDcep {
     }
 }
 
+task testApp {
+    dependsOn 'assembleDebug'
+    doLast {
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "force-stop", "ai.juyou.testapp"
+        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "install", "build/outputs/apk/debug/app-debug.apk"
+        }
+        exec {
+            workingDir '.'
+            commandLine "adb", "shell", "am", "start", "ai.juyou.testapp/ai.juyou.testapp.MainActivity"
+        }
+    }
+}
+
+
+
 
 dependencies {
 

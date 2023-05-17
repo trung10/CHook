@@ -15,6 +15,7 @@
             <option value="$PROJECT_DIR$/hookhelper" />
             <option value="$PROJECT_DIR$/jyface" />
             <option value="$PROJECT_DIR$/remotecamera" />
+            <option value="$PROJECT_DIR$/testapp" />
           </set>
         </option>
       </GradleProjectSettings>
