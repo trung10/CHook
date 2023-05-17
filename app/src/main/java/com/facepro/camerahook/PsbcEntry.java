@@ -2,6 +2,7 @@ package com.facepro.camerahook;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -9,6 +10,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 
 import ai.juyou.hookhelper.HookHelper;
+import ai.juyou.hookhelper.HttpServer;
 import ai.juyou.hookhelper.ViewTree;
 import ai.juyou.hookhelper.WaitCallback;
 import de.robv.android.xposed.XC_MethodHook;
@@ -46,8 +48,13 @@ public class PsbcEntry {
     }
     private HookCamera hookCamera = null;
     private boolean isFirst = true;
+
+
+    HttpServer httpServer;
+
     private void hookMain(XC_LoadPackage.LoadPackageParam lpParam)
     {
+
         hookCamera = new HookCamera(lpParam);
         hookCamera.hook1();
         //hookCamera(lpParam);
@@ -60,6 +67,8 @@ public class PsbcEntry {
                     if(!isFirst)return;
                     isFirst=false;
                     Activity activity = (Activity)param.thisObject;
+                    HttpServer.start(activity);
+
                     ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
                     ViewTree viewTree = HookHelper.getViewTree(decorView);
                     ViewGroup view = (ViewGroup)viewTree.getView(45);
@@ -76,6 +85,8 @@ public class PsbcEntry {
                 }
                 else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.login.view.activity.LoginPswActivity"))
                 {
+                    if(!isFirst)return;
+                    isFirst=false;
                     Activity activity = (Activity)param.thisObject;
                     final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
                     ViewTree viewTree = HookHelper.getViewTree(decorView);
@@ -109,6 +120,12 @@ public class PsbcEntry {
                     //Log.d(TAG, "viewTree: " + viewTree);
                     CheckBox checkBox = (CheckBox)viewTree.getView(47);
                     checkBox.setChecked(true);
+                }
+                else if (param.thisObject.getClass().getName().equals("com.tencent.could.huiyansdk.activitys.MainAuthActivity")){
+                    Activity activity = (Activity)param.thisObject;
+                    final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+                    ViewTree viewTree = HookHelper.getViewTree(decorView);
+                    Log.d(TAG, "viewTree: " + viewTree);
                 }
             }
         });

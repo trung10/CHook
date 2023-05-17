@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.GridView;
 
+import ai.juyou.hookhelper.HttpServer;
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -24,14 +25,15 @@ public class HookEntry implements IXposedHookLoadPackage {
 
     private static final String TAG = "CameraHook";
 
+
     DcepEntry dcepEntry;
     PsbcEntry psbcEntry;
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpParam) throws Throwable {
-        //Log.d(TAG, "handleLoadPackage: " + lpParam.packageName);
+        Log.d(TAG, "handleLoadPackage: " + lpParam.packageName);
         if(lpParam.packageName.equals("com.yitong.mbank.psbc")) {
-            //psbcEntry = new PsbcEntry();
-            //psbcEntry.handleLoadPackage(lpParam);
+            psbcEntry = new PsbcEntry();
+            psbcEntry.handleLoadPackage(lpParam);
         }
         else if(lpParam.packageName.equals("cn.gov.pbc.dcep")) {
             dcepEntry = new DcepEntry();
