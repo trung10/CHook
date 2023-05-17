@@ -47,87 +47,14 @@ public class PsbcEntry {
         Log.d(TAG, "dataDir: " + lpParam.appInfo.dataDir);
     }
     private HookCamera hookCamera = null;
-    private boolean isFirst = true;
-
-
-    HttpServer httpServer;
+    private PsbcActivityHook psbcActivityHook = null;
 
     private void hookMain(XC_LoadPackage.LoadPackageParam lpParam)
     {
-
         hookCamera = new HookCamera(lpParam);
         hookCamera.hook1();
-        //hookCamera(lpParam);
-        XposedHelpers.findAndHookMethod(android.app.Activity.class, "onResume", new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                Log.d(TAG, "onResume: " + param.thisObject);
-                if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.home.view.activity.MainActivity"))
-                {
-                    if(!isFirst)return;
-                    isFirst=false;
-                    Activity activity = (Activity)param.thisObject;
-                    HttpServer.start(activity);
 
-                    ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = HookHelper.getViewTree(decorView);
-                    ViewGroup view = (ViewGroup)viewTree.getView(45);
-                    HookHelper.waitGetChildView(view, 0, new WaitCallback() {
-                        @Override
-                        public void callback(Object obj) {
-                            //Log.d(TAG, "callback: " + obj);
-                            ViewGroup view = (ViewGroup)obj;
-                            ViewTree viewTree = HookHelper.getViewTree(view);
-                            //Log.d(TAG, "viewTree: " + viewTree);
-                            view.performClick();
-                        }
-                    });
-                }
-                else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.login.view.activity.LoginPswActivity"))
-                {
-                    if(!isFirst)return;
-                    isFirst=false;
-                    Activity activity = (Activity)param.thisObject;
-                    final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = HookHelper.getViewTree(decorView);
-                    //Log.d(TAG, "viewTree: " + viewTree);
-                    EditText editText = (EditText)viewTree.getView(35);
-                    editText.setText("18694042031");
-                    CheckBox checkBox = (CheckBox)viewTree.getView(39);
-                    checkBox.setChecked(true);
-                    Button button = (Button)viewTree.getView(44);
-                    button.performClick();
-                    //Log.d(TAG, "textView: " + textView.getText());
-
-                    HookHelper.waitFindChildView(decorView, "的登录密码",true, new WaitCallback() {
-                        @Override
-                        public void callback(Object obj) {
-                            //Log.d(TAG, "找到了: " + obj);
-                            ViewTree viewTree = HookHelper.getViewTree(decorView);
-                            //Log.d(TAG, "viewTree: " + viewTree);
-                            EditText editText = (EditText)viewTree.getView(49);
-                            editText.setText("w3312422");
-                            //HookHelper.getSuperClass(editText.getClass());
-                            Button button = (Button)viewTree.getView(58);
-                            button.performClick();
-                        }
-                    });
-                }
-                else if(param.thisObject.getClass().getName().equals("com.yitong.mbank.psbc.module.app.view.activity.FaceCheckAuthActivity")){
-                    Activity activity = (Activity)param.thisObject;
-                    final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = HookHelper.getViewTree(decorView);
-                    //Log.d(TAG, "viewTree: " + viewTree);
-                    CheckBox checkBox = (CheckBox)viewTree.getView(47);
-                    checkBox.setChecked(true);
-                }
-                else if (param.thisObject.getClass().getName().equals("com.tencent.could.huiyansdk.activitys.MainAuthActivity")){
-                    Activity activity = (Activity)param.thisObject;
-                    final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
-                    ViewTree viewTree = HookHelper.getViewTree(decorView);
-                    Log.d(TAG, "viewTree: " + viewTree);
-                }
-            }
-        });
+        psbcActivityHook = new PsbcActivityHook();
+        psbcActivityHook.hook(lpParam);
     }
 }

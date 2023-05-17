@@ -34,24 +34,17 @@ public class DcepEntry {
 
                 if(className.equals("com.alipay.mobile.framework.quinoxless.QuinoxlessApplication")
                         && processName.equals("cn.gov.pbc.dcep")) {
-                    performLoadPackage(lpParam);
+                    hookMain(lpParam);
                 }
             }
         });
     }
 
-    private boolean isFirst = true;
-
     DcepActivityHook dcepActivityHook;
 
-    private void performLoadPackage(XC_LoadPackage.LoadPackageParam lpParam)
+    private void hookMain(XC_LoadPackage.LoadPackageParam lpParam)
     {
         dcepActivityHook = new DcepActivityHook();
         dcepActivityHook.hook(lpParam);
-
-
-
-
-
     }
 }
