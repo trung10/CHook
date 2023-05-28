@@ -18,12 +18,12 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import ai.juyou.hookhelper.HookHelper;
-import ai.juyou.remotecamera.CameraSurface;
-import ai.juyou.remotecamera.CameraSurfaceSession;
 import ai.juyou.remotecamera.CameraCallback;
-import ai.juyou.remotecamera.CameraSession;
-import ai.juyou.remotecamera.CameraVideo;
-import ai.juyou.remotecamera.CameraVideoSession;
+import ai.juyou.remotecamera.CameraImagePullSession;
+import ai.juyou.remotecamera.CameraImagePushSession;
+import ai.juyou.remotecamera.CameraPullSession;
+import ai.juyou.remotecamera.CameraPushSession;
+import ai.juyou.remotecamera.CameraImage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
@@ -49,25 +49,26 @@ public class HookCamera2 {
     private List<Surface> mHookSurfaces;
 
     private final ImageReader.OnImageAvailableListener mHookImageAvailableListener;
-    private final CameraVideo mCamera;
+    private final CameraImage mCamera;
     private ImageReader mOriginImageReader;
     private ImageReader.OnImageAvailableListener mOriginImageAvailableListener;
-    private CameraVideoSession mCameraSession;
+    private CameraImagePushSession mCameraPushSession;
+    private CameraImagePullSession mCameraPullSession;
 
     public HookCamera2() {
-        mCamera = new CameraVideo();
+        mCamera = new CameraImage("192.168.1.113");
         mCamera.setCallback(new CameraCallback() {
             @Override
-            public void onPushConnected(CameraSession session) {
-                if(session != mCameraSession){
-                    mCameraSession = (CameraVideoSession)session;
+            public void onPushConnected(CameraPushSession session) {
+                if(session != mCameraPushSession){
+                    mCameraPushSession = (CameraImagePushSession)session;
                 }
             }
 
             @Override
-            public void onPullConnected(CameraSession session) {
-                if(session != mCameraSession){
-                    mCameraSession = (CameraVideoSession)session;
+            public void onPullConnected(CameraPullSession session) {
+                if(session != mCameraPullSession){
+                    mCameraPullSession = (CameraImagePullSession)session;
                 }
             }
 
@@ -222,13 +223,13 @@ public class HookCamera2 {
                         Image image = (Image)param.args[0];
                         if(image!=null){
                             long startTime = System.currentTimeMillis();
-                            if(mCameraSession != null) {
-                                mCameraSession.encode(image);
+                            if(mCameraPushSession != null) {
+                                mCameraPushSession.encode(image);
                             }
                             //Log.d(TAG,"encode cost:" + (System.currentTimeMillis() - startTime));
                             startTime = System.currentTimeMillis();
-                            if(mCameraSession != null) {
-                                mCameraSession.render(image);
+                            if(mCameraPullSession != null) {
+                                mCameraPullSession.render(image);
                             }
                             else{
                                 clearImage(image);

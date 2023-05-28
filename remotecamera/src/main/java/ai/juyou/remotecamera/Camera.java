@@ -12,16 +12,16 @@ public abstract class Camera {
 
     private CameraCallback mCallback;
 
-    public Camera() {
-        mPushServerConfig = new ServerConfig("192.168.0.222",8020);
-        mPullServerConfig = new ServerConfig("192.168.0.222",8030);
+    public Camera(String ipAddress) {
+        mPushServerConfig = new ServerConfig(ipAddress,8020);
+        mPullServerConfig = new ServerConfig(ipAddress,8030);
     }
 
     public void setCallback(CameraCallback callback){
         mCallback = callback;
     }
 
-    protected void PushConnect(Size size,CameraEncoder encoder, CameraSession session){
+    protected void PushConnect(Size size,CameraEncoder encoder, CameraPushSession session){
         mCameraPush = new CameraPush(mPushServerConfig, encoder, new CameraPushCallback() {
             @Override
             public void onConnected() {
@@ -41,7 +41,7 @@ public abstract class Camera {
         mCameraPush.connect();
     }
 
-    protected void PullConnect(Size size,CameraDecoder decoder, CameraSession session){
+    protected void PullConnect(Size size,CameraDecoder decoder, CameraPullSession session){
         mCameraPull = new CameraPull(mPullServerConfig, decoder, new CameraPullCallback() {
             @Override
             public void onConnected() {

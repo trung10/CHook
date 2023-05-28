@@ -1,8 +1,8 @@
 package ai.juyou.remotecamera;
 
 public interface CameraCallback {
-    void onPushConnected(CameraSession session);
-    void onPullConnected(CameraSession session);
+    void onPushConnected(CameraPushSession session);
+    void onPullConnected(CameraPullSession session);
     void onPushDisconnected();
     void onPullDisconnected();
 }

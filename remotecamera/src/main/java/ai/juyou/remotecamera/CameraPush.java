@@ -49,11 +49,7 @@ class CameraPush {
             @Override
             public void onEncoded(byte[] data) {
                 mPushCount++;
-                if (channelFuture != null && channelFuture.channel().isActive()) {
-                    ByteBuf buf = Unpooled.buffer(data.length);
-                    buf.writeBytes(data);
-                    channelFuture.channel().writeAndFlush(buf);
-                }
+                CameraPush.this.send(1,data);
             }
         });
         mHandler = new Handler(Looper.getMainLooper()) {
@@ -82,6 +78,34 @@ class CameraPush {
                 }
             }
         };
+    }
+
+
+    public void send(int cmd, byte[] data) {
+        if (channelFuture != null && channelFuture.channel().isActive()) {
+            // 计算数据长度并添加到包头
+            byte[] header = new byte[8];
+            System.arraycopy(intToBytes(data.length + 4), 0, header, 0, 4);
+            System.arraycopy(intToBytes(cmd), 0,  header, 4, 4);
+
+            byte[] message = new byte[data.length + header.length];
+            System.arraycopy(header, 0, message, 0, header.length);
+            System.arraycopy(data, 0, message, header.length, data.length);
+
+            ByteBuf buffer = Unpooled.buffer();
+            buffer.writeBytes(message);
+            channelFuture.channel().writeAndFlush(buffer);
+        }
+    }
+
+    private byte[] intToBytes(int i)
+    {
+        byte[] b = new byte[4];
+        b[0] = (byte)(i >> 24 & 0xFF);
+        b[1] = (byte)(i >> 16 & 0xFF);
+        b[2] = (byte)(i >> 8 & 0xFF);
+        b[3] = (byte)(i & 0xFF);
+        return b;
     }
 
     public long getPushCount()

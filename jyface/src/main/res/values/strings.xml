@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">聚友云换脸</string>
     <string name="app_description">视频聊天，实时换脸</string>
+    <string name="permission_tip">重要提示</string>
+    <string name="permission_msg">您必须开启相机权限才能继续 \n
+            请点击设置，在权限选项中开启相机权限</string>
+    <string name="permission_btn_setting">设置</string>
+    <string name="permission_btn_quit">退出</string>
 </resources>

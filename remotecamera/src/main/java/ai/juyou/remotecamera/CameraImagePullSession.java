@@ -4,17 +4,14 @@ import android.media.Image;
 
 import java.nio.ByteBuffer;
 
-public class CameraVideoSession extends CameraSession {
-
-    private final VideoEncoder mVideoEncoder;
+public class CameraImagePullSession implements CameraPullSession {
     private final VideoDecoder mVideoDecoder;
-    public CameraVideoSession(VideoEncoder videoEncoder, VideoDecoder videoDecoder) {
-        this.mVideoEncoder = videoEncoder;
+    public CameraImagePullSession(VideoDecoder videoDecoder) {
         this.mVideoDecoder = videoDecoder;
     }
 
-    public void render(Image image)
-    {
+    @Override
+    public void render(Image image) {
         synchronized (this.mVideoDecoder) {
             byte[] buffer = this.mVideoDecoder.getBuffer();
             final int width = this.mVideoDecoder.getSize().getWidth();
@@ -47,10 +44,5 @@ public class CameraVideoSession extends CameraSession {
                 }
             }
         }
-    }
-
-    public void encode(Image image)
-    {
-        this.mVideoEncoder.encode(image);
     }
 }
