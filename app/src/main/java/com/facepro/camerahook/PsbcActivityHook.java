@@ -1,17 +1,27 @@
 package com.facepro.camerahook;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import ai.juyou.hookhelper.ActivityHook;
 import ai.juyou.hookhelper.HookHelper;
 import ai.juyou.hookhelper.HttpServer;
 import ai.juyou.hookhelper.ViewTree;
 import ai.juyou.hookhelper.WaitCallback;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class PsbcActivityHook extends ActivityHook {
@@ -23,6 +33,15 @@ public class PsbcActivityHook extends ActivityHook {
         addResume("com.yitong.mbank.psbc.module.login.view.activity.LoginPswActivity", 1, hookLoginPswActivityCallback);
         addResume("com.yitong.mbank.psbc.module.app.view.activity.FaceCheckAuthActivity", 1, hookFaceCheckAuthActivityCallback);
         addResume("com.tencent.could.huiyansdk.activitys.MainAuthActivity", 1, hookMainAuthActivityCallback);
+
+        XposedHelpers.findAndHookMethod(View.class,"draw", Canvas.class, new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                Canvas canvas = (Canvas)param.args[0];
+                View view = (View)param.thisObject;
+                Log.d(TAG, "draw: " + canvas + " " + view);
+            }
+        });
         super.hook(lpParam);
     }
 
@@ -82,9 +101,11 @@ public class PsbcActivityHook extends ActivityHook {
         public void onHook(Activity activity) {
             final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
             ViewTree viewTree = HookHelper.getViewTree(decorView);
-            Log.d(TAG, "viewTree: " + viewTree);
+            //Log.d(TAG, "viewTree: " + viewTree);
             CheckBox checkBox = (CheckBox)viewTree.getView(47);
             checkBox.setChecked(true);
+
+
         }
     };
 
@@ -94,6 +115,8 @@ public class PsbcActivityHook extends ActivityHook {
             final ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
             ViewTree viewTree = HookHelper.getViewTree(decorView);
             Log.d(TAG, "viewTree: " + viewTree);
+            View view = viewTree.getView(16);
+            //view.setBackgroundColor(0xff00ff00);
         }
     };
 }

@@ -262,23 +262,34 @@ public class VideoDecoder {
         return bitmap;
     }
 
+    private byte[] intToBytes(int value) {
+        byte[] src = new byte[4];
+        src[3] = (byte) ((value>>24) & 0xFF);
+        src[2] = (byte) ((value>>16)& 0xFF);
+        src[1] = (byte) ((value>>8)&0xFF);
+        src[0] = (byte) (value & 0xFF);
+        return src;
+    }
+
     private Socket socket;
     private DataOutputStream out;
     private DataInputStream in;
     private void receiveData()
     {
         try {
-            socket = new Socket("192.168.3.118", 8010);
+            socket = new Socket("192.168.0.222", 8010);
             out = new DataOutputStream(socket.getOutputStream());
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             try {
                 //发送无符号32位整数
                 int num = 111222333;
-                byte[] bytes = new byte[4];
-                bytes[0] = (byte) ((num >>> 24) & 0xFF);
-                bytes[1] = (byte) ((num >>> 16) & 0xFF);
-                bytes[2] = (byte) ((num >>> 8) & 0xFF);
-                bytes[3] = (byte) (num & 0xFF);
+                byte[] bytes = new byte[12];
+                byte[] lengthBytes = intToBytes(8);
+                byte[] cmdBytes = intToBytes(2);
+                byte[] numBytes = intToBytes(num);
+                System.arraycopy(lengthBytes, 0, bytes, 0, 4);
+                System.arraycopy(cmdBytes, 0, bytes, 4, 4);
+                System.arraycopy(numBytes, 0, bytes, 8, 4);
                 out.write(bytes);
                 out.flush();
 

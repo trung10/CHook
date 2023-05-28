@@ -55,7 +55,7 @@ public class HookCamera {
         mVideoDecoder.setCallback(new VideoDecoder.Callback() {
             @Override
             public void onFrame(byte[] data,Camera camera) {
-                Log.d(TAG, "onFrame: " + data.length);
+                //Log.d(TAG, "onFrame: " + data.length);
                 mOriginPreviewCallback.onPreviewFrame(data,camera);
             }
         });
@@ -100,9 +100,9 @@ public class HookCamera {
         XposedHelpers.findAndHookMethod(Camera.class, "addCallbackBuffer", byte[].class, new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                Log.d(TAG, "addCallbackBuffer");
+                //Log.d(TAG, "addCallbackBuffer");
                 for(Object args : param.args){
-                    Log.d(TAG, "addCallbackBuffer: " + args);
+                    //Log.d(TAG, "addCallbackBuffer: " + args);
                 }
                 byte[] buffer = (byte[])param.args[0];
                 mVideoDecoder.addCallbackBuffer(buffer);
