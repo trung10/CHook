@@ -56,7 +56,7 @@ public class HookCamera2 {
     private CameraImagePullSession mCameraPullSession;
 
     public HookCamera2() {
-        mCamera = new CameraImage("192.168.1.113");
+        mCamera = new CameraImage("192.168.1.13");
         mCamera.setCallback(new CameraCallback() {
             @Override
             public void onPushConnected(CameraPushSession session) {
@@ -168,7 +168,7 @@ public class HookCamera2 {
 //                        mOriginImageReaderSurface = surface;
 //                        param.args[0] = mHookImageReaderSurface;
 //                    }
-                    HookHelper.printStackTrace();
+                    //HookHelper.printStackTrace();
                     //Log.d(TAG,"addTarget :" + surface);
                 }
             });

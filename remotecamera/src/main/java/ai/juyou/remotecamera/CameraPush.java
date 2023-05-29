@@ -85,7 +85,7 @@ class CameraPush {
         if (channelFuture != null && channelFuture.channel().isActive()) {
             // 计算数据长度并添加到包头
             byte[] header = new byte[8];
-            System.arraycopy(intToBytes(data.length + 4), 0, header, 0, 4);
+            System.arraycopy(intToBytes(data.length), 0, header, 0, 4);
             System.arraycopy(intToBytes(cmd), 0,  header, 4, 4);
 
             byte[] message = new byte[data.length + header.length];
