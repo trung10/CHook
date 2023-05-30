@@ -19,6 +19,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".FaceActivity" android:exported="false"/>
         <meta-data
             android:name="xposedmodule"
             android:value="true" />

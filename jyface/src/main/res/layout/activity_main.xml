@@ -75,7 +75,7 @@
                 android:orientation="vertical">
 
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/menu_detection_test"
+                    android:id="@+id/menu_preview"
                     style="@style/DefaultCard"
                     app:cardElevation="0dp">
 

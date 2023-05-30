@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.app.ActivityCompat;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -24,7 +25,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setModuleState(binding);
 
-        binding.menuDetectionTest.setOnClickListener(this);
+        binding.menuPreview.setOnClickListener(this);
         binding.menuCredit.setOnClickListener(this);
         binding.menuSettings.setOnClickListener(this);
         binding.menuAbout.setOnClickListener(this);
@@ -63,8 +64,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initPreview()
     {
-        //Intent intent = new Intent(this, FaceActivity.class);
-        //startActivity(intent);
+
     }
 
     private boolean allPermissionsGranted() {
@@ -98,10 +98,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         int id = v.getId();
-        if (id == R.id.menu_detection_test) {
-            Log.d("MainActivity", "onClick: menu_detection_test");
+        if (id == R.id.menu_preview) {
+            Intent intent = new Intent(this, FaceActivity.class);
+            startActivity(intent);
         } else if (id == R.id.menu_credit) {
-            Log.d("MainActivity", "onClick: menu_location_credit");
+            //Intent intent = new Intent(this, FaceActivity.class);
+            //startActivity(intent);
         } else if (id == R.id.menu_settings) {
             Log.d("MainActivity", "onClick: menu_settings");
         } else if (id == R.id.menu_about) {
