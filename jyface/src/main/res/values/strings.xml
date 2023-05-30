@@ -10,4 +10,9 @@
     <string name="title_credit">充值</string>
     <string name="title_settings">设置</string>
     <string name="title_about">关于聚友云换脸</string>
+    <string name="card_title_not_activated">云换脸模块尚未激活</string>
+    <string name="card_detail_not_activated">请检查LSPosed模块设置，并激活聚友云换脸模块</string>
+    <string name="card_title_activated">云换脸模块已激活</string>
+    <string name="card_detail_activated">XXX-XXX-XXX</string>
+    <string name="card_serve_time">已使用 0 分钟</string>
 </resources>

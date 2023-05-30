@@ -45,7 +45,10 @@ public class FaceActivity extends AppCompatActivity implements ImageAnalysis.Ana
         setContentView(binding.getRoot());
 
         getWindow().setStatusBarColor(getColor(R.color.black));
+    }
 
+    private void initPreview()
+    {
         String ipAddress = "192.168.1.113";
         cameraImage = new CameraImage(ipAddress);
         cameraImage.setCallback(this);

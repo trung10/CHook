@@ -5,7 +5,7 @@ plugins {
 android {
     signingConfigs {
         soda {
-            storeFile file('soda.jks')
+            storeFile file('../soda.jks')
             storePassword 'z9019883'
             keyAlias 'soda'
             keyPassword 'z9019883'

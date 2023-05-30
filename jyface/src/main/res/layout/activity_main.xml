@@ -94,7 +94,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/menu_location_credit"
+                    android:id="@+id/menu_credit"
                     style="@style/DefaultCard"
                     app:cardElevation="0dp">
 
