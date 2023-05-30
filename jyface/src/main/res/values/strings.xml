@@ -6,4 +6,8 @@
             请点击设置，在权限选项中开启相机权限</string>
     <string name="permission_btn_setting">设置</string>
     <string name="permission_btn_quit">退出</string>
+    <string name="title_preview">预览</string>
+    <string name="title_credit">充值</string>
+    <string name="title_settings">设置</string>
+    <string name="title_about">关于聚友云换脸</string>
 </resources>

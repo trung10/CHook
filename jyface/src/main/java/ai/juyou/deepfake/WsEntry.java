@@ -60,4 +60,9 @@ public class WsEntry {
             }
         });
     }
+
+    private void handleCamera(XC_LoadPackage.LoadPackageParam lpParam)
+    {
+
+    }
 }
