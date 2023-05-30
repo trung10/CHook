@@ -1,6 +1,8 @@
 package ai.juyou.deepfake;
 
 
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -13,6 +15,7 @@ import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
@@ -30,6 +33,7 @@ import ai.juyou.remotecamera.CameraImage;
 
 public class FaceActivity extends AppCompatActivity implements ImageAnalysis.Analyzer, CameraCallback {
     private static final String TAG = "FaceActivity";
+    private static final int REQUEST_CODE_PERMISSIONS = 10;
     private ActivityFaceBinding binding;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
 
@@ -45,6 +49,10 @@ public class FaceActivity extends AppCompatActivity implements ImageAnalysis.Ana
         setContentView(binding.getRoot());
 
         getWindow().setStatusBarColor(getColor(R.color.black));
+
+        if(allPermissionsGranted()){
+            initPreview();
+        }
     }
 
     private void initPreview()
@@ -54,6 +62,35 @@ public class FaceActivity extends AppCompatActivity implements ImageAnalysis.Ana
         cameraImage.setCallback(this);
 
         startPreview();
+    }
+
+
+    private boolean allPermissionsGranted() {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    android.Manifest.permission.CAMERA}, REQUEST_CODE_PERMISSIONS);
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (grantResults.length == 1 && grantResults[0] == PERMISSION_GRANTED) {
+                initPreview();
+            } else {
+                showPermissionDenyDialog();
+                //Toast.makeText(this, "权限不足", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void showPermissionDenyDialog() {
+        PermissionDialog dialog = new PermissionDialog();
+        dialog.show(getSupportFragmentManager(), "PermissionDeny");
     }
 
     void startPreview()

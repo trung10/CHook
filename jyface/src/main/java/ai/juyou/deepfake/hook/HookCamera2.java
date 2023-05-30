@@ -1,4 +1,4 @@
-package ai.juyou.deepfake;
+package ai.juyou.deepfake.hook;
 
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;

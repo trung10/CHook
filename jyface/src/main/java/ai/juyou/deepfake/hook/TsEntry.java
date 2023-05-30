@@ -1,13 +1,9 @@
-package ai.juyou.deepfake;
+package ai.juyou.deepfake.hook;
 
 import android.app.Activity;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 
-import ai.juyou.hookhelper.HookHelper;
-import ai.juyou.hookhelper.ViewTree;
-import ai.juyou.hookhelper.WaitCallback;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
