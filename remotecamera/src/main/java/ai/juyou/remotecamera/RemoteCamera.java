@@ -1,27 +1,33 @@
 package ai.juyou.remotecamera;
 
+
 import android.util.Log;
 import android.util.Size;
 
-public abstract class Camera {
+import ai.juyou.remotecamera.codec.CameraDecoder;
+import ai.juyou.remotecamera.codec.CameraEncoder;
+import ai.juyou.remotecamera.codec.VideoDecoder;
+import ai.juyou.remotecamera.codec.VideoEncoder;
+
+public class RemoteCamera {
     protected final ServerConfig mPushServerConfig;
     protected final ServerConfig mPullServerConfig;
 
     private CameraPush mCameraPush;
     private CameraPull mCameraPull;
 
-    private CameraCallback mCallback;
+    private RemoteCameraCallback mCallback;
 
-    public Camera(String ipAddress) {
+    public RemoteCamera(String ipAddress) {
         mPushServerConfig = new ServerConfig(ipAddress,8020);
         mPullServerConfig = new ServerConfig(ipAddress,8030);
     }
 
-    public void setCallback(CameraCallback callback){
+    public void setCallback(RemoteCameraCallback callback){
         mCallback = callback;
     }
 
-    protected void PushConnect(Size size,CameraEncoder encoder, CameraPushSession session){
+    public void PushConnect(CameraEncoder encoder, RemoteCameraPushSession session){
         mCameraPush = new CameraPush(mPushServerConfig, encoder, new CameraPushCallback() {
             @Override
             public void onConnected() {
@@ -30,6 +36,15 @@ public abstract class Camera {
                     mCallback.onPushConnected(session);
                 }
             }
+
+            @Override
+            public void onConnectFailed(Throwable e) {
+                Log.d("CameraHook", "Push Connect Failed");
+                if(mCallback!=null){
+                    mCallback.onPushConnectFailed(e);
+                }
+            }
+
             @Override
             public void onDisconnected() {
                 Log.d("CameraHook", "Push disconnect");
@@ -41,13 +56,21 @@ public abstract class Camera {
         mCameraPush.connect();
     }
 
-    protected void PullConnect(Size size,CameraDecoder decoder, CameraPullSession session){
+    public void PullConnect(CameraDecoder decoder, RemoteCameraPullSession session){
         mCameraPull = new CameraPull(mPullServerConfig, decoder, new CameraPullCallback() {
             @Override
             public void onConnected() {
                 Log.d("CameraHook", "Pull Connect: " + mPullServerConfig.getServerAddress() + ":" + mPullServerConfig.getServerPort());
                 if(mCallback!=null){
                     mCallback.onPullConnected(session);
+                }
+            }
+
+            @Override
+            public void onConnectFailed(Throwable e) {
+                Log.d("CameraHook", "Push Connect Failed");
+                if(mCallback!=null){
+                    mCallback.onPullConnectFailed(e);
                 }
             }
 
@@ -62,7 +85,16 @@ public abstract class Camera {
         mCameraPull.connect();
     }
 
-    public abstract void Open(Size size);
+    public void open(Size size)
+    {
+        VideoEncoder videoEncoder = new VideoEncoder(size);
+        RemoteCameraPushSession pushSession = new RemoteCameraPushSession(videoEncoder);
+        this.PushConnect(videoEncoder, pushSession);
+
+        VideoDecoder videoDecoder = new VideoDecoder(size);
+        RemoteCameraPullSession pullSession = new RemoteCameraPullSession(videoDecoder);
+        this.PullConnect(videoDecoder, pullSession);
+    }
 
     public void Close()
     {
@@ -77,4 +109,5 @@ public abstract class Camera {
             mCameraPull = null;
         }
     }
+
 }

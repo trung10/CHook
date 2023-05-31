@@ -3,16 +3,14 @@ package ai.juyou.remotecamera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
-import android.util.Size;
 
 import androidx.annotation.NonNull;
 
 import java.net.InetSocketAddress;
 
+import ai.juyou.remotecamera.codec.CameraDecoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
@@ -63,7 +61,7 @@ public class CameraPull {
                         break;
                     case CONNECT_FAILED:
                         mDecoder.stop();
-                        callback.onConnectFailed();
+                        callback.onConnectFailed((Throwable) msg.obj);
                         break;
                     case MESSAGE_RECEIVED:
                         mDecoder.decode((byte[]) msg.obj);

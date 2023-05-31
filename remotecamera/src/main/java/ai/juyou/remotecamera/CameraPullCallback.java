@@ -5,7 +5,7 @@ abstract class CameraPullCallback {
     {
 
     }
-    public void onConnectFailed()
+    public void onConnectFailed(Throwable e)
     {
 
     }

@@ -1,4 +1,4 @@
-package ai.juyou.remotecamera;
+package ai.juyou.remotecamera.codec;
 
 import android.media.Image;
 import android.media.MediaCodec;

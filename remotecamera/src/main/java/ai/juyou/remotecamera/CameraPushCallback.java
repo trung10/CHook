@@ -5,7 +5,7 @@ abstract class CameraPushCallback {
     {
 
     }
-    public void onConnectFailed()
+    public void onConnectFailed(Throwable e)
     {
 
     }

@@ -1,4 +1,4 @@
-package ai.juyou.remotecamera;
+package ai.juyou.remotecamera.codec;
 
 
 import android.media.Image;
@@ -14,7 +14,9 @@ import android.util.Size;
 
 import java.nio.ByteBuffer;
 
-final class VideoEncoder extends CameraEncoder implements Runnable {
+import ai.juyou.remotecamera.ImageUtils;
+
+public class VideoEncoder extends CameraEncoder implements Runnable {
     private final static String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final long DEFAULT_TIMEOUT_US = 10000;
     public static final int ENCODED = 1;
@@ -90,6 +92,7 @@ final class VideoEncoder extends CameraEncoder implements Runnable {
         return mIsRunning;
     }
 
+    @Override
     public void encode(Image image)
     {
         if(mIsRunning){

@@ -1,6 +1,5 @@
-package ai.juyou.remotecamera;
+package ai.juyou.remotecamera.codec;
 
-import android.media.Image;
 import android.util.Size;
 
 public class SurfaceDecoder extends CameraDecoder {
@@ -21,6 +20,15 @@ public class SurfaceDecoder extends CameraDecoder {
 
     }
 
+    @Override
+    public byte[] getBuffer() {
+        return new byte[0];
+    }
+
+    @Override
+    public Size getSize() {
+        return null;
+    }
 
 
 }

@@ -1,9 +1,7 @@
-package ai.juyou.remotecamera;
+package ai.juyou.remotecamera.codec;
 
 
-import android.media.Image;
 import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,11 +10,9 @@ import android.util.Log;
 import android.util.Size;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
-final class VideoDecoder extends CameraDecoder implements Runnable {
+public class VideoDecoder extends CameraDecoder implements Runnable {
     private final static String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final long DEFAULT_TIMEOUT_US = 10000;
     public static final int DECODED = 1;
@@ -78,11 +74,13 @@ final class VideoDecoder extends CameraDecoder implements Runnable {
         return mIsRunning;
     }
 
+    @Override
     public byte[] getBuffer()
     {
         return mBuffer;
     }
 
+    @Override
     public Size getSize()
     {
         return mSize;

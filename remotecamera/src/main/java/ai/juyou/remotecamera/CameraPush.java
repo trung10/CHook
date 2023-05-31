@@ -3,13 +3,12 @@ package ai.juyou.remotecamera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
-import android.util.Size;
 
 import androidx.annotation.NonNull;
 
 import java.net.InetSocketAddress;
 
+import ai.juyou.remotecamera.codec.CameraEncoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -62,7 +61,7 @@ class CameraPush {
                         break;
                     case CONNECT_FAILED:
                         mEncoder.stop();
-                        callback.onConnectFailed();
+                        callback.onConnectFailed((Throwable) msg.obj);
                         break;
                     case MESSAGE_RECEIVED:
                         callback.onReceived((byte[]) msg.obj);

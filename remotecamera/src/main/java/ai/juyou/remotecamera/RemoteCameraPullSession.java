@@ -4,18 +4,20 @@ import android.media.Image;
 
 import java.nio.ByteBuffer;
 
-public class CameraImagePullSession implements CameraPullSession {
-    private final VideoDecoder mVideoDecoder;
-    public CameraImagePullSession(VideoDecoder videoDecoder) {
-        this.mVideoDecoder = videoDecoder;
+import ai.juyou.remotecamera.codec.CameraDecoder;
+import ai.juyou.remotecamera.codec.VideoDecoder;
+
+public class RemoteCameraPullSession {
+    private final CameraDecoder mCameraDecoder;
+    public RemoteCameraPullSession(CameraDecoder cameraDecoder) {
+        this.mCameraDecoder = cameraDecoder;
     }
 
-    @Override
-    public void render(Image image) {
-        synchronized (this.mVideoDecoder) {
-            byte[] buffer = this.mVideoDecoder.getBuffer();
-            final int width = this.mVideoDecoder.getSize().getWidth();
-            final int height = this.mVideoDecoder.getSize().getHeight();
+    public void decode(Image image) {
+        synchronized (this.mCameraDecoder) {
+            byte[] buffer = this.mCameraDecoder.getBuffer();
+            final int width = this.mCameraDecoder.getSize().getWidth();
+            final int height = this.mCameraDecoder.getSize().getHeight();
 
             ByteBuffer yByteBuffer = image.getPlanes()[0].getBuffer();
             yByteBuffer.position(0);

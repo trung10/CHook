@@ -5,7 +5,7 @@ import android.media.Image;
 
 import java.nio.ByteBuffer;
 
-final class ImageUtils {
+public class ImageUtils {
 
     public static byte[] YUV_420_888toNV21_1(Image image) {
         YuvConverter converter = new YuvConverter();
