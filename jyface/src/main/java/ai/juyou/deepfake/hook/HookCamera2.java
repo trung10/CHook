@@ -70,6 +70,12 @@ public class HookCamera2 {
             }
 
             @Override
+            public void onDecoded(byte[] data)
+            {
+
+            }
+
+            @Override
             public void onPushConnectFailed(Throwable e) {
 
             }

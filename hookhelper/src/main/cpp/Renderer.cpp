@@ -96,7 +96,7 @@ static void printGlString(const char* name, GLenum s) {
 
 // ----------------------------------------------------------------------------
 
-Renderer::Renderer() {
+Renderer::Renderer() : mVideoWidth(1280), mVideoHeight(720) {
 }
 
 Renderer::~Renderer() {
@@ -113,12 +113,9 @@ Renderer::~Renderer() {
 static const char *VERTEX_SHADER = GET_STR(
         attribute vec4 aPosition;
         attribute vec2 aTextCoord;
-        //uniform float uAspectRatio;
         varying vec2 vTextCoord;
         void main() {
             vTextCoord = aTextCoord;
-            //vec4 scaledPosition = aPosition * vec4(uAspectRatio, 1.0, 1.0, 1.0);
-            //gl_Position = scaledPosition;
             gl_Position = aPosition;
         }
 );
@@ -132,9 +129,10 @@ static const char *FRAGMENT_SHADER = GET_STR(
         uniform sampler2D uTexture;
         uniform sampler2D vTexture;
         void main() {
-            float y = texture2D(yTexture, vTextCoord).r;
-            float u = texture2D(uTexture, vTextCoord).r - 0.5;
-            float v = texture2D(vTexture, vTextCoord).r - 0.5;
+            vec2 rotatedTextCoord = vec2(1.0 - vTextCoord.y,  vTextCoord.x);
+            float y = texture2D(yTexture, rotatedTextCoord).r;
+            float u = texture2D(uTexture, rotatedTextCoord).r - 0.5;
+            float v = texture2D(vTexture, rotatedTextCoord).r - 0.5;
             float r = y + 1.13983 * v;
             float g = y - 0.39465 * u - 0.5806 * v;
             float b = y + 2.03211 * u;
@@ -253,22 +251,28 @@ bool Renderer::init(ANativeWindow *window) {
     );
 
 
-    float videoAspectRatio = (float) mVideoWidth / mVideoHeight;
-    float screenAspectRatio = (float) mScreenWidth / mScreenHeight;
+//    float videoAspectRatio = (float) mVideoHeight / mVideoWidth;
+//    float screenAspectRatio = (float) mScreenWidth / mScreenHeight;
+//
+//    ALOGV("%dx%d %f", mVideoHeight, mVideoWidth, videoAspectRatio);
+//
+//    ALOGV("%dx%d %f", mScreenWidth, mScreenHeight, screenAspectRatio);
+//
+//    // 计算需要设置的视口大小
+//    int viewportWidth, viewportHeight;
+//    if (videoAspectRatio > screenAspectRatio) {
+//        // 视频宽高比较宽，需要调整视口高度
+//        viewportWidth = mScreenWidth;
+//        viewportHeight = mScreenWidth / videoAspectRatio;
+//    } else {
+//        // 视频宽高比较窄，需要调整视口宽度
+//        viewportWidth = mScreenHeight * videoAspectRatio;
+//        viewportHeight = mScreenHeight;
+//    }
 
-    // 计算需要设置的视口大小
-    int viewportWidth, viewportHeight;
-    if (videoAspectRatio > screenAspectRatio) {
-        // 视频宽高比较宽，需要调整视口高度
-        viewportWidth = mScreenWidth;
-        viewportHeight = mScreenWidth / videoAspectRatio;
-    } else {
-        // 视频宽高比较窄，需要调整视口宽度
-        viewportWidth = mScreenHeight * videoAspectRatio;
-        viewportHeight = mScreenHeight;
-    }
+//    ALOGV("glViewport size: %dx%d", viewportWidth, viewportHeight);
 
-    glViewport(0, mScreenHeight-viewportHeight, viewportWidth, viewportHeight);
+//    glViewport(0, 0,mVideoWidth,  mVideoHeight);
 
     return true;
 }

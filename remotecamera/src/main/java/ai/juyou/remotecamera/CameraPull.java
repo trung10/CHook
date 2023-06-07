@@ -45,13 +45,7 @@ public class CameraPull {
         mDecoder = decoder;
 
         decoder.start();
-        decoder.setCallback(new CameraDecoder.Callback() {
-            @Override
-            public void onDecoded(byte[] data) {
-                mDecodeCount++;
-                //Log.d("CameraHook", "delay: " + (mPullCount - mDecodeCount));
-            }
-        });
+
         mHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {

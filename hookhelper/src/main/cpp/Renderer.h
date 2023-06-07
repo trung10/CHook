@@ -44,8 +44,8 @@ private:
     EGLContext mContext;
     GLuint mProgram;
     GLuint mTextures[3] = {0};
-    int mVideoWidth = 720;
-    int mVideoHeight = 1280;
+    int mVideoWidth;
+    int mVideoHeight;
     int mScreenWidth, mScreenHeight;
 };
 

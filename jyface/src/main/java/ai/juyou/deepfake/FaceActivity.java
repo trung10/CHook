@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ai.juyou.deepfake.databinding.ActivityFaceBinding;
+import ai.juyou.hookhelper.GLRenderer;
 import ai.juyou.remotecamera.RemoteCameraCallback;
 import ai.juyou.remotecamera.RemoteCameraPullSession;
 import ai.juyou.remotecamera.RemoteCameraPushSession;
@@ -83,11 +84,10 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
 
     private void initRemoteCamera(Size previewSize)
     {
-        String ipAddress = "192.168.1.5";
+        String ipAddress = "192.168.222.178";
         mRemoteCamera = new RemoteCamera(ipAddress);
         mRemoteCamera.setCallback(this);
-        Surface surface = new Surface(mTextureView.getSurfaceTexture());
-        mRemoteCamera.open(previewSize,null, surface);
+        mRemoteCamera.open(previewSize);
         updateStatusText("开始连接...");
     }
 
@@ -278,6 +278,9 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
     public void onDestroy() {
         super.onDestroy();
         stopPush();
+        if(glRenderer!= null){
+            glRenderer.release();
+        }
     }
 
 
@@ -291,10 +294,18 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
     }
 
 
+    private GLRenderer glRenderer;
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
         if (allPermissionsGranted()) {
             initPreview();
+
+
+            SurfaceTexture surfaceTexture = mTextureView.getSurfaceTexture();
+            //设置SurfaceTexture缓冲区大小
+            surfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            Surface mPreviewSurface = new Surface(surfaceTexture);
+            glRenderer = new GLRenderer(mPreviewSurface);
         }
     }
 
@@ -323,6 +334,12 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
     public void onPullConnected(RemoteCameraPullSession session) {
         updateStatusText("Pull已连接");
         mRemoteCameraPullSession = session;
+    }
+
+    @Override
+    public void onDecoded(byte[] data)
+    {
+        glRenderer.draw(data);
     }
 
     @Override

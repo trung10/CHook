@@ -93,6 +93,14 @@ public class RemoteCamera {
         this.PushConnect(videoEncoder, pushSession);
 
         VideoDecoder videoDecoder = new VideoDecoder(size);
+        videoDecoder.setCallback(new CameraDecoder.Callback() {
+            @Override
+            public void onDecoded(byte[] data) {
+                if(mCallback!=null){
+                    mCallback.onDecoded(data);
+                }
+            }
+        });
         RemoteCameraPullSession pullSession = new RemoteCameraPullSession(videoDecoder);
         this.PullConnect(videoDecoder, pullSession);
     }

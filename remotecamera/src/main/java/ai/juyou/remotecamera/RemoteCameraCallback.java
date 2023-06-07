@@ -7,6 +7,8 @@ public interface RemoteCameraCallback {
     void onPushConnectFailed(Throwable e);
     void onPullConnectFailed(Throwable e);
 
+    void onDecoded(byte[] data);
+
     void onPushDisconnected();
     void onPullDisconnected();
 }

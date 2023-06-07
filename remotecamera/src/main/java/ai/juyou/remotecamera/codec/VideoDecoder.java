@@ -143,7 +143,7 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
             public void handleMessage(Message msg) {
                 if (msg.what == DECODED) {
                     byte[] data = (byte[]) msg.obj;
-                    Log.d("CameraHook", "handleMessage:"+data.length);
+                    //Log.d("CameraHook", "handleMessage:"+data.length);
                     _decode(data);
                 }
             }
