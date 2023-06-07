@@ -1,7 +1,9 @@
 package ai.juyou.remotecamera.codec;
 
+import android.graphics.SurfaceTexture;
 import android.media.Image;
 import android.util.Size;
+import android.view.Surface;
 
 public abstract class CameraDecoder {
     protected Callback mCallback;

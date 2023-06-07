@@ -236,7 +236,7 @@ public class HookCamera2 {
                             //Log.d(TAG,"encode cost:" + (System.currentTimeMillis() - startTime));
                             startTime = System.currentTimeMillis();
                             if(mCameraPullSession != null) {
-                                mCameraPullSession.decode(image);
+                                mCameraPullSession.pull(image);
                             }
                             else{
                                 clearImage(image);

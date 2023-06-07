@@ -86,7 +86,8 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
         String ipAddress = "192.168.1.5";
         mRemoteCamera = new RemoteCamera(ipAddress);
         mRemoteCamera.setCallback(this);
-        mRemoteCamera.open(previewSize);
+        Surface surface = new Surface(mTextureView.getSurfaceTexture());
+        mRemoteCamera.open(previewSize,null, surface);
         updateStatusText("开始连接...");
     }
 
@@ -354,6 +355,7 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
             if(mRemoteCameraPushSession!=null){
                 mRemoteCameraPushSession.push(image);
             }
+
             image.close();
         }
     }

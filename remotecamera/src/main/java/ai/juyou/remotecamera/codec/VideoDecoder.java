@@ -1,6 +1,7 @@
 package ai.juyou.remotecamera.codec;
 
 
+import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Handler;
@@ -8,6 +9,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.util.Size;
+import android.view.Surface;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -22,10 +24,12 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
     private Thread mThread;
     private Handler mDecoderHandler;
     private byte[] mBuffer;
+    private Surface mSurface;
 
-    public VideoDecoder(Size size)
+    public VideoDecoder(Size size,Surface surface)
     {
         mSize = size;
+        mSurface = surface;
         mBuffer = new byte[size.getWidth()*size.getHeight()*3/2];
     }
 
@@ -34,7 +38,7 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
         try {
             mMediaCodec = MediaCodec.createDecoderByType(MIME_TYPE);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE, mSize.getWidth(), mSize.getHeight());
-            mMediaCodec.configure(mediaFormat, null, null, 0);
+            mMediaCodec.configure(mediaFormat, mSurface, null, 0);
             mMediaCodec.start();
 
             mThread = new Thread(this);
@@ -106,18 +110,26 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
 
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
+        Log.d("CameraHook", "outputBufferIndex:"+outputBufferIndex);
         if(outputBufferIndex>=0){
-            ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
-            if(outputBuffer.hasArray()){
-                Log.d("CameraHook", "outputBuffer has array");
+            boolean doRender = bufferInfo.size != 0 && mSurface!=null;
+            if(doRender)
+            {
+                Log.d("CameraHook", "doRender");
+                mMediaCodec.releaseOutputBuffer(outputBufferIndex, true);
             }
-            synchronized (this) {
-                outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
-                if(mCallback!=null){
-                    mCallback.onDecoded(mBuffer);
+            else{
+                ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
+                Log.d("CameraHook", "outputBuffer:"+outputBuffer.remaining());
+                synchronized (this) {
+                    outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
+                    if(mCallback!=null){
+                        mCallback.onDecoded(mBuffer);
+                    }
                 }
+                mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             }
-            mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
+
         }
 //        while (outputBufferIndex >= 0) {
 //            ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
@@ -141,6 +153,7 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
             public void handleMessage(Message msg) {
                 if (msg.what == DECODED) {
                     byte[] data = (byte[]) msg.obj;
+                    Log.d("CameraHook", "handleMessage:"+data.length);
                     _decode(data);
 //                    outputStream.write(data, 0, data.length);
 //                    byte[] receivedData = outputStream.toByteArray();

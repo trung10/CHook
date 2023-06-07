@@ -3,6 +3,7 @@ package ai.juyou.remotecamera;
 
 import android.util.Log;
 import android.util.Size;
+import android.view.Surface;
 
 import ai.juyou.remotecamera.codec.CameraDecoder;
 import ai.juyou.remotecamera.codec.CameraEncoder;
@@ -91,7 +92,18 @@ public class RemoteCamera {
         RemoteCameraPushSession pushSession = new RemoteCameraPushSession(videoEncoder);
         this.PushConnect(videoEncoder, pushSession);
 
-        VideoDecoder videoDecoder = new VideoDecoder(size);
+        VideoDecoder videoDecoder = new VideoDecoder(size,null);
+        RemoteCameraPullSession pullSession = new RemoteCameraPullSession(videoDecoder);
+        this.PullConnect(videoDecoder, pullSession);
+    }
+
+    public void open(Size size, Surface pushSurface,Surface pullSurface)
+    {
+        VideoEncoder videoEncoder = new VideoEncoder(size);
+        RemoteCameraPushSession pushSession = new RemoteCameraPushSession(videoEncoder);
+        this.PushConnect(videoEncoder, pushSession);
+
+        VideoDecoder videoDecoder = new VideoDecoder(size,null);
         RemoteCameraPullSession pullSession = new RemoteCameraPullSession(videoDecoder);
         this.PullConnect(videoDecoder, pullSession);
     }
