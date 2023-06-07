@@ -105,9 +105,7 @@ Renderer::~Renderer() {
     eglDestroyContext(mDisplay, mContext);
     eglDestroySurface(mDisplay, mSurface);
     eglTerminate(mDisplay);
-    ANativeWindow_release(mWindow);
 }
-
 
 #define GET_STR(x) #x
 static const char *VERTEX_SHADER = GET_STR(
@@ -249,30 +247,6 @@ bool Renderer::init(ANativeWindow *window) {
                  GL_UNSIGNED_BYTE,
                  NULL
     );
-
-
-//    float videoAspectRatio = (float) mVideoHeight / mVideoWidth;
-//    float screenAspectRatio = (float) mScreenWidth / mScreenHeight;
-//
-//    ALOGV("%dx%d %f", mVideoHeight, mVideoWidth, videoAspectRatio);
-//
-//    ALOGV("%dx%d %f", mScreenWidth, mScreenHeight, screenAspectRatio);
-//
-//    // 计算需要设置的视口大小
-//    int viewportWidth, viewportHeight;
-//    if (videoAspectRatio > screenAspectRatio) {
-//        // 视频宽高比较宽，需要调整视口高度
-//        viewportWidth = mScreenWidth;
-//        viewportHeight = mScreenWidth / videoAspectRatio;
-//    } else {
-//        // 视频宽高比较窄，需要调整视口宽度
-//        viewportWidth = mScreenHeight * videoAspectRatio;
-//        viewportHeight = mScreenHeight;
-//    }
-
-//    ALOGV("glViewport size: %dx%d", viewportWidth, viewportHeight);
-
-//    glViewport(0, 0,mVideoWidth,  mVideoHeight);
 
     return true;
 }

@@ -13,11 +13,13 @@ import android.view.Surface;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 
 public class VideoDecoder extends CameraDecoder implements Runnable {
     private final static String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final long DEFAULT_TIMEOUT_US = 10000;
     public static final int DECODED = 1;
+    public static final int QUIT = 2;
     private final Size mSize;
     private MediaCodec mMediaCodec;
     private boolean mIsRunning = false;
@@ -50,10 +52,18 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
         mIsRunning = false;
     }
 
+    final CountDownLatch latch = new CountDownLatch(1);
+
     @Override
     public void stop() {
         if(mIsRunning){
             mIsRunning = false;
+            mDecoderHandler.obtainMessage(QUIT).sendToTarget();
+            try {
+                latch.await();
+            } catch (InterruptedException ignored) {
+
+            }
             mDecoderHandler.getLooper().quit();
             if(mThread!=null){
                 try {
@@ -68,6 +78,7 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
                 mMediaCodec.release();
                 mMediaCodec = null;
             }
+            Log.d("RemoteCamera", "VideoDecoder stopped");
         }
     }
 
@@ -145,6 +156,12 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
                     byte[] data = (byte[]) msg.obj;
                     //Log.d("CameraHook", "handleMessage:"+data.length);
                     _decode(data);
+                }
+                else if (msg.what == QUIT) {
+                    if(mCallback!=null){
+                        mCallback.onDecoded(null);
+                        latch.countDown();
+                    }
                 }
             }
         };

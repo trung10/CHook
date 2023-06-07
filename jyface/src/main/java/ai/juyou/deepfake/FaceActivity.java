@@ -258,26 +258,11 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
         return null;
     }
 
-
-    private void startPush(Size size) {
-//        if(mCameraPush != null) {
-//            stopPush();
-//        }
-//        mCameraPush = new CameraPush(mCameraPushContext);
-//        mCameraPush.setCallback(this);
-//        mCameraPush.start(size);
-    }
-
-    private void stopPush() {
-//        if (mCameraPush != null) {
-//            mCameraPush.stop();
-//            mCameraPush = null;
-//        }
-    }
-
     public void onDestroy() {
         super.onDestroy();
-        stopPush();
+        if(mRemoteCamera!=null){
+            mRemoteCamera.close();
+        }
         if(glRenderer!= null){
             glRenderer.release();
         }

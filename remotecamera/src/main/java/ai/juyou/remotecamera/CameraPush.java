@@ -3,6 +3,7 @@ package ai.juyou.remotecamera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -130,11 +131,12 @@ class CameraPush {
     }
 
     public void disconnect() {
-        mEncoder.stop();
         if (channelFuture != null && channelFuture.channel().isActive()) {
             channelFuture.channel().close();
             channelFuture = null;
+            Log.d("RemoteCamera", "Push已断开");
         }
+        mEncoder.stop();
     }
 
     private void run(ChannelHandler channelHandler) throws InterruptedException {

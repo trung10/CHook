@@ -84,6 +84,7 @@ public class VideoEncoder extends CameraEncoder implements Runnable {
                 mMediaCodec.release();
                 mMediaCodec = null;
             }
+            Log.d("RemoteCamera", "VideoEncoder stopped");
         }
     }
 

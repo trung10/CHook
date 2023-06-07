@@ -221,7 +221,7 @@ public class HookCamera2 {
                         if(param.thisObject== mOriginImageReader){
                             mOriginImageReader = null;
                             mOriginImageAvailableListener = null;
-                            mCamera.Close();
+                            mCamera.close();
                         }
                     }
                     Log.d(TAG,"setOnImageAvailableListener " + listener);

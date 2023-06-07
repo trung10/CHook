@@ -1,5 +1,6 @@
 package ai.juyou.hookhelper;
 
+import android.util.Log;
 import android.view.Surface;
 
 public class GLRenderer {
@@ -8,24 +9,36 @@ public class GLRenderer {
     }
     private Surface mSurface;
     private boolean isInit = false;
+    private boolean isRelease = false;
     public GLRenderer(Surface surface) {
         this.mSurface = surface;
     }
 
     public void draw(byte[] yuvData) {
+        if(isRelease) {
+            return;
+        }
         if(!isInit) {
             glInit(mSurface);
             isInit = true;
         }
-        glDraw(yuvData);
+        if(yuvData!=null){
+            glDraw(yuvData);
+        }
+        else{
+            glRelease();
+            isRelease = true;
+            Log.d("RemoteCamera", "GLRenderer glRelease");
+        }
     }
 
     public void release() {
-        glRelease();
-        if(mSurface!=null) {
+        if (mSurface != null) {
             mSurface.release();
             mSurface = null;
         }
+        isRelease = true;
+        Log.d("RemoteCamera", "GLRenderer release");
     }
 
     private native void glInit(Surface surface);

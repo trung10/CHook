@@ -105,7 +105,7 @@ public class RemoteCamera {
         this.PullConnect(videoDecoder, pullSession);
     }
 
-    public void Close()
+    public void close()
     {
         if(mCameraPush != null)
         {

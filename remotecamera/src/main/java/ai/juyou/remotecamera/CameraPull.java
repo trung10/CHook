@@ -3,6 +3,7 @@ package ai.juyou.remotecamera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -93,11 +94,12 @@ public class CameraPull {
         mThread.start();
     }
     public void disconnect() {
-        mDecoder.stop();
         if (channelFuture != null && channelFuture.channel().isActive()) {
             channelFuture.channel().close();
             channelFuture = null;
+            Log.d("RemoteCamera", "Pull已断开");
         }
+        mDecoder.stop();
     }
 
 
