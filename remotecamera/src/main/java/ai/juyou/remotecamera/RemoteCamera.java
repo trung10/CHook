@@ -92,18 +92,7 @@ public class RemoteCamera {
         RemoteCameraPushSession pushSession = new RemoteCameraPushSession(videoEncoder);
         this.PushConnect(videoEncoder, pushSession);
 
-        VideoDecoder videoDecoder = new VideoDecoder(size,null);
-        RemoteCameraPullSession pullSession = new RemoteCameraPullSession(videoDecoder);
-        this.PullConnect(videoDecoder, pullSession);
-    }
-
-    public void open(Size size, Surface pushSurface,Surface pullSurface)
-    {
-        VideoEncoder videoEncoder = new VideoEncoder(size);
-        RemoteCameraPushSession pushSession = new RemoteCameraPushSession(videoEncoder);
-        this.PushConnect(videoEncoder, pushSession);
-
-        VideoDecoder videoDecoder = new VideoDecoder(size,null);
+        VideoDecoder videoDecoder = new VideoDecoder(size);
         RemoteCameraPullSession pullSession = new RemoteCameraPullSession(videoDecoder);
         this.PullConnect(videoDecoder, pullSession);
     }

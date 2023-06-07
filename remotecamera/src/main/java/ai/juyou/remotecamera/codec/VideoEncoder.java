@@ -24,7 +24,7 @@ public class VideoEncoder extends CameraEncoder implements Runnable {
     private MediaCodec mMediaCodec;
     private boolean mIsRunning = false;
     private Thread mThread;
-    private Handler mMainHandler;
+    private final Handler mMainHandler;
     private byte[] mBuffer;
 
     public VideoEncoder(Size size)

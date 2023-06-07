@@ -24,12 +24,10 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
     private Thread mThread;
     private Handler mDecoderHandler;
     private byte[] mBuffer;
-    private Surface mSurface;
 
-    public VideoDecoder(Size size,Surface surface)
+    public VideoDecoder(Size size)
     {
         mSize = size;
-        mSurface = surface;
         mBuffer = new byte[size.getWidth()*size.getHeight()*3/2];
     }
 
@@ -38,7 +36,7 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
         try {
             mMediaCodec = MediaCodec.createDecoderByType(MIME_TYPE);
             MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE, mSize.getWidth(), mSize.getHeight());
-            mMediaCodec.configure(mediaFormat, mSurface, null, 0);
+            mMediaCodec.configure(mediaFormat, null, null, 0);
             mMediaCodec.start();
 
             mThread = new Thread(this);
@@ -110,25 +108,17 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
 
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         int outputBufferIndex = mMediaCodec.dequeueOutputBuffer(bufferInfo, DEFAULT_TIMEOUT_US);
-        Log.d("CameraHook", "outputBufferIndex:"+outputBufferIndex);
+        //Log.d("CameraHook", "outputBufferIndex:"+outputBufferIndex);
         if(outputBufferIndex>=0){
-            boolean doRender = bufferInfo.size != 0 && mSurface!=null;
-            if(doRender)
-            {
-                Log.d("CameraHook", "doRender");
-                mMediaCodec.releaseOutputBuffer(outputBufferIndex, true);
-            }
-            else{
-                ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
-                Log.d("CameraHook", "outputBuffer:"+outputBuffer.remaining());
-                synchronized (this) {
-                    outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
-                    if(mCallback!=null){
-                        mCallback.onDecoded(mBuffer);
-                    }
+            ByteBuffer outputBuffer = mMediaCodec.getOutputBuffer(outputBufferIndex);
+            //Log.d("CameraHook", "outputBuffer:"+outputBuffer.remaining());
+            synchronized (this) {
+                outputBuffer.get(mBuffer,bufferInfo.offset,bufferInfo.size);
+                if(mCallback!=null){
+                    mCallback.onDecoded(mBuffer);
                 }
-                mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             }
+            mMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
 
         }
 //        while (outputBufferIndex >= 0) {
@@ -155,34 +145,9 @@ public class VideoDecoder extends CameraDecoder implements Runnable {
                     byte[] data = (byte[]) msg.obj;
                     Log.d("CameraHook", "handleMessage:"+data.length);
                     _decode(data);
-//                    outputStream.write(data, 0, data.length);
-//                    byte[] receivedData = outputStream.toByteArray();
-//                    int nextFrameIndex = findByFrame(receivedData, 1, receivedData.length);
-//                    if(nextFrameIndex >= 0){
-//                        byte[] frameData = Arrays.copyOfRange(receivedData, 0, nextFrameIndex);
-//                        _decode(frameData);
-//                        outputStream.reset();
-//                        try {
-//                            outputStream.write(Arrays.copyOfRange(receivedData, nextFrameIndex, receivedData.length));
-//                        } catch (IOException ignored) {
-//
-//                        }
-//                    }
                 }
             }
         };
         Looper.loop();
     }
-
-    private int findByFrame(byte[] bytes, int start, int totalSize) {
-        for (int i = start; i < totalSize - 4; i++) {
-            //对output.h264文件分析 可通过分隔符 0x00000001 读取真正的数据
-            if (bytes[i] == 0x00 && bytes[i + 1] == 0x00 && bytes[i + 2] == 0x00 && bytes[i + 3] == 0x01) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-
 }

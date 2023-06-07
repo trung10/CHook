@@ -1,35 +1,52 @@
-//
-// Created by Zhao YongKui on 4/6/23.
-//
 
-#ifndef CAMERAHOOK_RENDERER_H
-#define CAMERAHOOK_RENDERER_H
 
+#ifndef PLAYER_RENDERER_H
+#define PLAYER_RENDERER_H
 #include <jni.h>
 #include <string>
 #include <android/native_window.h>
+#include <android/native_window_jni.h>
+#include <android/log.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES/gl.h>
+#include <GLES/glext.h>
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
+#include <thread>
 
-extern "C"{
-JNIEXPORT void JNICALL init(JNIEnv *env, jobject obj, jobject surface);
-JNIEXPORT void JNICALL resize(JNIEnv *env, jobject obj, jint width, jint height);
-JNIEXPORT void JNICALL render(JNIEnv *env, jobject obj);
-JNIEXPORT void JNICALL release(JNIEnv *env, jobject obj);
-};
+#define DEBUG 1
+
+#define LOG_TAG "GLES3JNI"
+#define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#if DEBUG
+#define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#else
+#define ALOGV(...)
+#endif
+
+extern bool checkGlError(const char* funcName);
+extern GLuint createShader(GLenum shaderType, const char* src);
+extern GLuint createProgram(const char* vtxSrc, const char* fragSrc);
 
 class Renderer {
 public:
     Renderer();
     ~Renderer();
 
-    void init(ANativeWindow *window);
-    void resize(int width, int height);
-    void render();
+
+    bool init(ANativeWindow* window);
+    void draw(uint8_t* yuvData);
 private:
-    ANativeWindow *mWindow;
-    int mWidth;
-    int mHeight;
+    ANativeWindow * mWindow;
+    EGLDisplay mDisplay;
+    EGLSurface mSurface;
+    EGLContext mContext;
+    GLuint mProgram;
+    GLuint mTextures[3] = {0};
+    int mVideoWidth = 720;
+    int mVideoHeight = 1280;
+    int mScreenWidth, mScreenHeight;
 };
 
-
-
-#endif //CAMERAHOOK_RENDERER_H
+#endif //PLAYER_RENDERER_H
