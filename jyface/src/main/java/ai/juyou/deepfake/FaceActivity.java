@@ -84,7 +84,7 @@ public class FaceActivity extends AppCompatActivity implements TextureView.Surfa
 
     private void initRemoteCamera(Size previewSize)
     {
-        String ipAddress = "192.168.222.178";
+        String ipAddress = "192.168.222.153";
         mRemoteCamera = new RemoteCamera(ipAddress);
         mRemoteCamera.setCallback(this);
         mRemoteCamera.open(previewSize);

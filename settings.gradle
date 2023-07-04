@@ -15,9 +15,6 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "CameraHook"
-include ':app'
 include ':hookhelper'
 include ':jyface'
 include ':remotecamera'
-include ':codec'
-include ':testapp'
